@@ -37,19 +37,103 @@
   padding-bottom: 28px;
   border-bottom: 1px solid var(--border);
 }
-.about-intro h1 {
+.about-hero {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 36px;
+  align-items: center;
+  margin-bottom: 32px;
+}
+.about-hero-copy h1 {
   font-size: 26px;
   letter-spacing: -0.015em;
   margin: 0 0 12px;
   line-height: 1.2;
 }
-.about-intro p {
+.about-hero-copy p {
   color: var(--text-muted);
   font-size: 14.5px;
   line-height: 1.65;
-  max-width: 74ch;
-  margin: 0 0 28px;
+  margin: 0 0 20px;
 }
+.about-stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.about-stats-dot {
+  color: var(--border);
+}
+.about-hero-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.about-hero-preview-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-faint);
+}
+.about-preview-card {
+  margin: 0;
+}
+.about-preview-card .rec-rationale {
+  margin-bottom: 0;
+}
+
+.about-compare-table {
+  overflow-x: auto;
+  margin-bottom: 32px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.about-compare-table table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.about-compare-table th,
+.about-compare-table td {
+  text-align: left;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: normal;
+  font-family: var(--sans);
+}
+.about-compare-table th:first-child,
+.about-compare-table td:first-child {
+  width: 36%;
+}
+.about-compare-table tbody td:first-child {
+  color: var(--text-muted);
+}
+.about-compare-table th {
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-faint);
+  background: var(--surface-2);
+}
+.about-compare-table th:last-child {
+  color: var(--accent-strong);
+}
+.about-compare-table tr:last-child td {
+  border-bottom: none;
+}
+.about-cell-yes {
+  color: var(--match);
+}
+.about-cell-no {
+  color: var(--text-faint);
+}
+
 .about-steps {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -386,8 +470,9 @@
 }
 .rec-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
+  gap: 8px 12px;
 }
 .confidence-flag {
   font-size: 10px;
@@ -399,6 +484,8 @@
   border-radius: 5px;
   padding: 2px 7px;
   cursor: help;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .rank-badge {
   font-family: var(--mono);
