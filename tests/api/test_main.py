@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import io
+import logging
 
 import pytest
 from fastapi.testclient import TestClient
@@ -171,6 +172,49 @@ def test_compare_end_to_end_and_poll_run(client):
     comparison = result["comparison"]
     assert comparison["shortlist_pick"] in {"two_tower", "sasrec", "hybrid_llm"}
     assert comparison["matches_on_recall"] in (True, False)
+
+
+def test_requests_are_logged_as_structured_events(client, caplog):
+    caplog.set_level(logging.INFO, logger="reclab")
+
+    resp = client.get("/health")
+
+    assert resp.status_code == 200
+    events = [r for r in caplog.records if r.getMessage() == "http_request"]
+    assert len(events) == 1
+    assert events[0].extra_fields["method"] == "GET"
+    assert events[0].extra_fields["path"] == "/health"
+    assert events[0].extra_fields["status_code"] == 200
+    assert isinstance(events[0].extra_fields["duration_ms"], float)
+
+
+def test_compare_job_lifecycle_is_logged(client, caplog):
+    caplog.set_level(logging.INFO, logger="reclab")
+    interactions, item_metadata = _tiny_dataset()
+
+    client.post(
+        "/compare",
+        files={
+            "interactions_csv": (
+                "interactions.csv",
+                io.BytesIO(_csv_bytes(interactions)),
+                "text/csv",
+            ),
+            "item_metadata_csv": (
+                "meta.csv",
+                io.BytesIO(_csv_bytes(item_metadata)),
+                "text/csv",
+            ),
+        },
+    )
+
+    event_names = [r.getMessage() for r in caplog.records]
+    assert "compare_job_created" in event_names
+    assert "compare_job_started" in event_names
+    assert "compare_job_done" in event_names
+
+    done_event = next(r for r in caplog.records if r.getMessage() == "compare_job_done")
+    assert done_event.extra_fields["shortlist_pick"] in {"two_tower", "sasrec", "hybrid_llm"}
 
 
 def test_run_not_found(client):

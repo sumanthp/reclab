@@ -34,7 +34,7 @@ What's real today:
 What's not done yet (see [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 - **Calibrating the reasoning engine's ranking logic** against the multi-metric finding above — two real-dataset runs now point at the same underlying gap (shortlist conflates "best overall" with "best on the dimension its own rationale invokes"). The new `low_confidence` signal reports that thinness honestly; it doesn't fix the ranking itself.
 - Running the harness against a genuinely denser Amazon Reviews category (`Video_Games`, `Musical_Instruments`) — the two run so far (`All_Beauty`, `Gift_Cards`) are both small.
-- A real LLM re-ranker for `hybrid_llm` (the default is TF-IDF lexical, no API key required — see `src/reclab/architectures/rerankers.py`).
+- Benchmarking the new `AnthropicReranker` (below) against the default lexical one on real data — it exists and is tested, but hasn't been run against MovieLens/Amazon Reviews to see whether it actually beats TF-IDF at this scale.
 
 ## Candidate architectures
 
@@ -42,9 +42,9 @@ What's not done yet (see [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 |---|---|---|
 | `two_tower` | Separate user/item embedding towers, BPR pairwise loss (real matrix factorization) | Dense collaborative signal, fast to train/serve |
 | `sasrec` | Single-head causal self-attention over interaction history, next-item prediction | Longer per-user sequences where order/recency matters |
-| `hybrid_llm` | SASRec-style encoder + pluggable re-ranker (default: TF-IDF lexical similarity, no API key needed) with reserved cold-item exploration slots | Sparse data, high cold-start ratio, rich item text |
+| `hybrid_llm` | SASRec-style encoder + pluggable re-ranker with reserved cold-item exploration slots | Sparse data, high cold-start ratio, rich item text |
 
-`hybrid_llm`'s re-ranker is an interface, not a fixed implementation — swapping in a real LLM API call is meant to be a small, obvious change (`HybridLLM(reranker=YourLLMReranker())`); see `src/reclab/architectures/rerankers.py`.
+`hybrid_llm`'s re-ranker is an interface (`src/reclab/architectures/rerankers.py`), not a single fixed implementation — two real ones exist: `LexicalReranker` (TF-IDF cosine similarity, the default — no API key, no network call) and `AnthropicReranker` (a real Claude API call, needs `pip install reclab[llm]` and `ANTHROPIC_API_KEY`; degrades to no signal rather than crashing the job on any API failure). Swap one in with `HybridLLM(reranker=AnthropicReranker())`.
 
 ## Repo layout
 
@@ -121,6 +121,8 @@ All optional, all environment variables read by the API (`src/reclab/api/main.py
 | `RECLAB_MAX_UPLOAD_MB` | `100` | Per-file upload size limit for `/profile` and `/compare`. |
 | `RECLAB_MAX_CONCURRENT_JOBS` | `2` | How many `/compare` training jobs can run at once; extra requests queue (status `pending`) rather than piling up unbounded background threads. |
 | `RECLAB_MAX_RETAINED_RUNS` | `200` | Oldest runs beyond this count are pruned whenever a new one starts, so the job store doesn't grow forever. |
+
+The API also emits structured (JSON-lines) logs to stdout — one line per HTTP request (`method`, `path`, `status_code`, `duration_ms`) plus `/compare` job lifecycle events (`compare_job_created`/`_started`/`_done`/`_cancelled`/`_error`, each with `job_id` and timing) — pipeable straight into `jq` or a real log aggregator. See `src/reclab/api/logging_config.py`.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add a new architecture or extend the reasoning engine, and [`benchmarks/README.md`](benchmarks/README.md) for what the benchmark runs actually found.
 

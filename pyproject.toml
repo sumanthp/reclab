@@ -37,6 +37,12 @@ dev = [
     "mypy>=1.11",
     "httpx>=0.27",
 ]
+# For AnthropicReranker (src/reclab/architectures/rerankers.py) — a real LLM
+# re-ranker for hybrid_llm. Not a dependency of the default install: the
+# default reranker (LexicalReranker) needs no API key and no network access.
+llm = [
+    "anthropic>=0.40",
+]
 
 [build-system]
 requires = ["hatchling"]

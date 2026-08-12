@@ -8,18 +8,22 @@ from __future__ import annotations
 import io
 import os
 import threading
+import time
 from dataclasses import asdict
 
 import pandas as pd
-from fastapi import BackgroundTasks, FastAPI, HTTPException, UploadFile
+from fastapi import BackgroundTasks, FastAPI, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from reclab.api import jobs
+from reclab.api.logging_config import configure_logging, log_event
 from reclab.architectures import REGISTRY
 from reclab.data_profiler import DataProfile, profile_interactions
 from reclab.eval import EvalResult, run_eval, summarize_comparison, temporal_train_test_split
 from reclab.reasoning_engine import Recommendation, recommend_architectures
+
+configure_logging()
 
 app = FastAPI(
     title="reclab",
@@ -58,6 +62,24 @@ _UPLOAD_CHUNK_BYTES = 1024 * 1024
 # "pending" (already a meaningful, displayed status) until a slot frees.
 MAX_CONCURRENT_JOBS = int(os.environ.get("RECLAB_MAX_CONCURRENT_JOBS", "2"))
 _job_slots = threading.Semaphore(MAX_CONCURRENT_JOBS)
+
+
+@app.middleware("http")
+async def _log_requests(request: Request, call_next):  # type: ignore[no-untyped-def]
+    start = time.perf_counter()
+    status_code = 500
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        log_event(
+            "http_request",
+            method=request.method,
+            path=request.url.path,
+            status_code=status_code,
+            duration_ms=round((time.perf_counter() - start) * 1000, 2),
+        )
 
 
 class ProfileResponse(BaseModel):
@@ -218,6 +240,8 @@ def _run_compare_job_inner(
     k: int,
 ) -> None:
     jobs.mark_running(job_id)
+    log_event("compare_job_started", job_id=job_id, n_rows=len(interactions))
+    job_start = time.perf_counter()
     try:
         profile = profile_interactions(
             interactions,
@@ -247,6 +271,12 @@ def _run_compare_job_inner(
                         "comparison": None,
                     },
                 )
+                log_event(
+                    "compare_job_cancelled",
+                    job_id=job_id,
+                    duration_ms=round((time.perf_counter() - job_start) * 1000, 2),
+                    architectures_completed=list(eval_results.keys()),
+                )
                 return
             try:
                 result = run_eval(
@@ -274,8 +304,21 @@ def _run_compare_job_inner(
                 "comparison": asdict(comparison),
             },
         )
+        log_event(
+            "compare_job_done",
+            job_id=job_id,
+            duration_ms=round((time.perf_counter() - job_start) * 1000, 2),
+            shortlist_pick=comparison.shortlist_pick,
+            matches_on_recall=comparison.matches_on_recall,
+        )
     except Exception as exc:  # noqa: BLE001 - must not raise inside a background task
         jobs.mark_error(job_id, str(exc))
+        log_event(
+            "compare_job_error",
+            job_id=job_id,
+            duration_ms=round((time.perf_counter() - job_start) * 1000, 2),
+            error=str(exc),
+        )
 
 
 @app.post("/compare", response_model=CompareStartResponse, status_code=202)
@@ -311,6 +354,13 @@ async def start_compare(
         item_metadata = await _read_csv(item_metadata_csv, "item metadata CSV")
 
     job_id = jobs.create_job(dataset_label=interactions_csv.filename)
+    log_event(
+        "compare_job_created",
+        job_id=job_id,
+        dataset_label=interactions_csv.filename,
+        n_rows=len(interactions),
+        has_item_metadata=item_metadata is not None,
+    )
     background_tasks.add_task(
         _run_compare_job, job_id, interactions, item_metadata, user_col, item_col, k
     )

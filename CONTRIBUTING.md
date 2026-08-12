@@ -58,9 +58,12 @@ uv run mypy src
 3. **A fourth architecture** (a GNN-based approach is the natural next
    candidate — see the MVP plan's out-of-scope-for-v0.1 list). Same interface,
    same registration process as the three that exist.
-4. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
-   interface in `src/reclab/architectures/rerankers.py` against an actual LLM
-   API, as an alternative to the default TF-IDF lexical one.
+4. **Benchmarking `AnthropicReranker` against `LexicalReranker` on real data.**
+   `src/reclab/architectures/rerankers.py` now has a real LLM re-ranker
+   (`pip install reclab[llm]`, needs `ANTHROPIC_API_KEY`) alongside the
+   default TF-IDF one — but nobody's run `hybrid_llm` with it against
+   MovieLens/Amazon Reviews yet to see whether real semantic matching beats
+   lexical overlap, and by how much, given the added cost/latency.
 
 ## Adding a new architecture
 
