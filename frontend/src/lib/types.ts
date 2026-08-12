@@ -68,10 +68,12 @@ export interface CompareResult {
   profile: DataProfile;
   reasoning_engine_shortlist: Recommendation[];
   eval_results: EvalResultsMap;
-  comparison: ComparisonSummary;
+  // null when the run was cancelled before enough architectures finished
+  // for a fair verdict — see summarize_comparison's caller in main.py.
+  comparison: ComparisonSummary | null;
 }
 
-export type JobStatus = "pending" | "running" | "done" | "error";
+export type JobStatus = "pending" | "running" | "done" | "error" | "cancelled";
 
 export interface RunResponse {
   id: string;
@@ -81,6 +83,16 @@ export interface RunResponse {
   updated_at: string;
   result: CompareResult | null;
   error: string | null;
+}
+
+// GET /runs list items — no `result`/`error`, kept cheap to list. Fetch
+// GET /runs/{id} (RunResponse) for the full detail of one run.
+export interface RunSummary {
+  id: string;
+  status: JobStatus;
+  dataset_label: string | null;
+  created_at: string;
+  updated_at: string;
 }
 
 export class ApiError extends Error {}

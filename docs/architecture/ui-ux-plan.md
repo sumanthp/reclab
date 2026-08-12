@@ -7,15 +7,21 @@ Per `mvp-plan.md` section 9: build this *after* Phase 0/1, not before. Phase
 (see `benchmarks/README.md`) and the CLI/API prove the core loop works
 without a UI. This doc is the Phase 2+ UI/UX plan referenced there.
 
-**Status update:** a first working version of `frontend/` now exists —
-Upload → Profile → Shortlist → Compare → Result detail (sections 3.1–3.5
-below), calling the real `/compare` job endpoint this doc's section 4
-specified. It's the MVP loop, not the fuller version this doc describes:
-no saved/browsable run history, and Layer 2 for the shortlist is the raw
-score rather than a structured rationale breakdown (see section 5's open
-question — still open; the frontend deliberately didn't parse the prose
-rationale client-side). The screen-by-screen spec below is still the
-target for what's left, not a stale plan for what already shipped.
+**Status update:** a working version of `frontend/` now exists — Upload →
+Profile → Shortlist → Compare → Result detail (sections 3.1–3.5 below),
+calling the real `/compare` job endpoint this doc's section 4 specified,
+plus browsable run history and mid-run cancellation (`GET /runs`,
+`POST /runs/{id}/cancel`) that went beyond this doc's original scope. A
+post-launch re-audit of the whole platform also caught two real gaps this
+plan didn't anticipate: `/profile` had no way to receive item metadata at
+all (fixed — see `src/reclab/api/main.py`), and `/architectures`' rich
+strengths/weaknesses/cost data was fetched by dead frontend code and never
+rendered (fixed — now shown in the shortlist's Layer 2 disclosure).
+Layer 2 for the shortlist score itself is still raw score, not a
+structured rationale breakdown (see section 5's open question — still
+open; the frontend deliberately didn't parse the prose rationale
+client-side). The screen-by-screen spec below is still the target for
+what's left, not a stale plan for what already shipped.
 
 ## 1. Who this is for, and what that implies
 
@@ -166,12 +172,15 @@ without a reason" stance (see `pyproject.toml`'s no-PyTorch rationale).
 3. **Compare + Result detail** (3.4–3.5). Done — the actual differentiator
    per `mvp-plan.md` section 2 ("the architecture comparison sandbox —
    still the core feature").
-4. **Polish pass** (not yet done): the mismatch-framing decision from
-   section 5 was resolved (neutral-but-visible, see `VerdictBanner.tsx`);
-   the rationale-structure decision is still open — the frontend shows the
-   raw score rather than parsing the prose rationale, deliberately. Saved/
-   browsable run history and a sample of actual recommended items (3.5)
-   remain unbuilt.
+4. **Polish pass**: the mismatch-framing decision from section 5 was
+   resolved (neutral-but-visible, see `VerdictBanner.tsx`); browsable run
+   history and mid-run cancellation shipped too (`RunHistory.tsx`,
+   `GET /runs`, `POST /runs/{id}/cancel`) — beyond this doc's original
+   scope but a direct answer to the "job id lost on refresh" gap a later
+   platform re-audit found. The rationale-structure decision is still
+   open — the frontend shows the raw score rather than parsing the prose
+   rationale, deliberately. A sample of actual recommended items (3.5)
+   remains unbuilt.
 
 Don't build a design system or a component library speculatively ahead of
 step 2 — three or four real screens against real API responses will make

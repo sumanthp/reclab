@@ -24,7 +24,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Literal
 
-JobStatus = Literal["pending", "running", "done", "error"]
+JobStatus = Literal["pending", "running", "done", "error", "cancelled"]
 
 _lock = threading.Lock()
 
@@ -109,6 +109,27 @@ def mark_error(job_id: str, error: str) -> None:
         )
 
 
+def mark_cancelled(job_id: str, result: dict[str, Any] | None = None) -> None:
+    """Two callers use this: the cancel endpoint (result=None — just
+    requests cancellation) and the background job noticing the request and
+    stopping (result=whatever architectures finished before it noticed).
+    Status is 'cancelled' either way; `result` being populated is what
+    distinguishes "stopping" from "stopped"."""
+    now = datetime.now(UTC).isoformat()
+    with _lock, _conn() as conn:
+        if result is not None:
+            conn.execute(
+                "UPDATE runs SET status = 'cancelled', result_json = ?, updated_at = ? "
+                "WHERE id = ?",
+                (json.dumps(result), now, job_id),
+            )
+        else:
+            conn.execute(
+                "UPDATE runs SET status = 'cancelled', updated_at = ? WHERE id = ?",
+                (now, job_id),
+            )
+
+
 def get_job(job_id: str) -> Job | None:
     with _conn() as conn:
         row = conn.execute(
@@ -127,3 +148,24 @@ def get_job(job_id: str) -> Job | None:
         result=json.loads(row[5]) if row[5] else None,
         error=row[6],
     )
+
+
+def list_jobs(limit: int = 50) -> list[Job]:
+    with _conn() as conn:
+        rows = conn.execute(
+            "SELECT id, status, dataset_label, created_at, updated_at, result_json, error "
+            "FROM runs ORDER BY created_at DESC LIMIT ?",
+            (limit,),
+        ).fetchall()
+    return [
+        Job(
+            id=r[0],
+            status=r[1],
+            dataset_label=r[2],
+            created_at=r[3],
+            updated_at=r[4],
+            result=json.loads(r[5]) if r[5] else None,
+            error=r[6],
+        )
+        for r in rows
+    ]

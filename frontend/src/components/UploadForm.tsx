@@ -53,8 +53,9 @@ export function UploadForm({ onAnalyze, loading, error }: Props) {
             onChange={(e) => setItemMetadataCsv(e.target.files?.[0] ?? null)}
           />
           <div className="hint">
-            Needs <code>item_id</code> and <code>description</code> columns — enables the
-            item-text signal (and lets <code>hybrid_llm</code> train).
+            Needs <code>item_id</code> and <code>description</code> columns — factors into the
+            profile and shortlist below (not just the later comparison), and lets{" "}
+            <code>hybrid_llm</code> train.
           </div>
         </div>
 

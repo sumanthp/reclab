@@ -287,9 +287,61 @@ details.layer2[open] summary .chev {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--border);
-  font-family: var(--mono);
   font-size: 12px;
   color: var(--text-muted);
+}
+.layer2-score {
+  font-family: var(--mono);
+}
+.layer2-desc {
+  margin: 8px 0;
+  font-family: var(--sans);
+  line-height: 1.5;
+}
+.cost-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.cost-badge {
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  color: var(--text-muted);
+}
+.cost-badge.cost-low {
+  background: var(--match-soft);
+  color: var(--match);
+}
+.cost-badge.cost-high {
+  background: var(--warn-soft);
+  color: var(--warn);
+}
+.pro-con {
+  margin-top: 8px;
+}
+.pro-con-label {
+  font-family: var(--sans);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pro-con-label.strengths {
+  color: var(--match);
+}
+.pro-con-label.weaknesses {
+  color: var(--warn);
+}
+.pro-con ul {
+  margin: 4px 0 0;
+  padding-left: 18px;
+  font-family: var(--sans);
+  line-height: 1.5;
 }
 
 /* ---------- compare cta ---------- */
@@ -328,9 +380,89 @@ details.layer2[open] summary .chev {
 .status-line {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   font-size: 13px;
   color: var(--text-muted);
+}
+.status-line-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ---------- run history ---------- */
+.run-history {
+  margin: 8px 0 32px;
+}
+.run-history-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-faint);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.run-history ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}
+.run-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: 12.5px;
+  color: var(--text);
+  cursor: pointer;
+}
+.run-history-item:hover {
+  border-color: var(--accent);
+}
+.run-history-item.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.run-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--text-faint);
+}
+.run-status-dot.status-done {
+  background: var(--match);
+}
+.run-status-dot.status-error {
+  background: var(--mismatch);
+}
+.run-status-dot.status-running,
+.run-status-dot.status-pending {
+  background: var(--accent);
+}
+.run-status-dot.status-cancelled {
+  background: var(--warn);
+}
+.run-history-item-text {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.run-history-status {
+  font-size: 11px;
+  color: var(--text-faint);
+  flex-shrink: 0;
 }
 
 /* ---------- verdict banner ---------- */
@@ -351,6 +483,10 @@ details.layer2[open] summary .chev {
 .verdict-banner.mismatch {
   background: var(--mismatch-soft);
   color: var(--mismatch);
+}
+.verdict-banner.cancelled {
+  background: var(--surface-2);
+  color: var(--text-muted);
 }
 .verdict-banner .icon {
   font-family: var(--mono);

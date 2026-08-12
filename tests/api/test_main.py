@@ -74,6 +74,45 @@ def test_profile_returns_shortlist(client):
     assert ranks == sorted(ranks)
 
 
+def test_profile_without_metadata_has_no_item_text(client):
+    interactions, _ = _tiny_dataset()
+    resp = client.post(
+        "/profile",
+        files={
+            "interactions_csv": (
+                "interactions.csv",
+                io.BytesIO(_csv_bytes(interactions)),
+                "text/csv",
+            )
+        },
+    )
+    assert resp.json()["profile"]["has_item_text"] is False
+
+
+def test_profile_with_metadata_reflects_item_text(client):
+    # Regression test: /profile used to have no item_metadata_csv parameter
+    # at all, so has_item_text was always False and hybrid_llm's rationale
+    # was always penalized for "no item text metadata" even when the caller
+    # was about to provide it to /compare a moment later.
+    interactions, item_metadata = _tiny_dataset()
+    resp = client.post(
+        "/profile",
+        files={
+            "interactions_csv": (
+                "interactions.csv",
+                io.BytesIO(_csv_bytes(interactions)),
+                "text/csv",
+            ),
+            "item_metadata_csv": ("meta.csv", io.BytesIO(_csv_bytes(item_metadata)), "text/csv"),
+        },
+    )
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["profile"]["has_item_text"] is True
+    hybrid = next(r for r in body["recommendations"] if r["architecture"] == "hybrid_llm")
+    assert "no item text metadata" not in hybrid["rationale"]
+
+
 def test_compare_requires_timestamp_column(client):
     csv = b"user_id,item_id\nu1,i1\n"
     resp = client.post(
@@ -125,3 +164,115 @@ def test_compare_end_to_end_and_poll_run(client):
 def test_run_not_found(client):
     resp = client.get("/runs/does-not-exist")
     assert resp.status_code == 404
+
+
+def test_list_runs_returns_summaries_newest_first(client):
+    interactions, _ = _tiny_dataset()
+    csv_bytes = _csv_bytes(interactions)
+
+    for _ in range(2):
+        client.post(
+            "/compare",
+            files={"interactions_csv": ("interactions.csv", io.BytesIO(csv_bytes), "text/csv")},
+        )
+
+    resp = client.get("/runs")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body) == 2
+    # summaries, not full results
+    assert "result" not in body[0]
+    assert "error" not in body[0]
+    assert body[0]["status"] == "done"
+    timestamps = [r["created_at"] for r in body]
+    assert timestamps == sorted(timestamps, reverse=True)
+
+
+def test_cancel_unknown_run_404s(client):
+    resp = client.post("/runs/does-not-exist/cancel")
+    assert resp.status_code == 404
+
+
+def test_cancel_already_finished_run_409s(client):
+    interactions, _ = _tiny_dataset()
+    start = client.post(
+        "/compare",
+        files={
+            "interactions_csv": (
+                "interactions.csv",
+                io.BytesIO(_csv_bytes(interactions)),
+                "text/csv",
+            )
+        },
+    )
+    job_id = start.json()["job_id"]  # already "done" — TestClient runs it synchronously
+
+    resp = client.post(f"/runs/{job_id}/cancel")
+    assert resp.status_code == 409
+    assert "already finished" in resp.json()["detail"]
+
+
+def test_cancel_pending_run_marks_it_cancelled(client):
+    from reclab.api import jobs as jobs_module
+
+    job_id = jobs_module.create_job(dataset_label="never-started.csv")
+
+    resp = client.post(f"/runs/{job_id}/cancel")
+    assert resp.status_code == 200
+    assert resp.json()["status"] == "cancelled"
+
+    # cancelling an already-cancelled run is a 409, not silently accepted twice
+    again = client.post(f"/runs/{job_id}/cancel")
+    assert again.status_code == 409
+
+
+def test_compare_job_does_not_start_if_cancelled_before_it_ran():
+    from reclab.api import jobs as jobs_module
+    from reclab.api.main import _run_compare_job
+
+    interactions, _ = _tiny_dataset()
+    job_id = jobs_module.create_job(dataset_label="test")
+    jobs_module.mark_cancelled(job_id)  # simulates a cancel request beating the thread pool
+
+    _run_compare_job(job_id, interactions, None, "user_id", "item_id", 10)
+
+    job = jobs_module.get_job(job_id)
+    assert job.status == "cancelled"
+    assert job.result is None  # never touched — mark_running must not have run
+
+
+def test_compare_job_stops_between_architectures_when_cancelled(monkeypatch):
+    from reclab.api import jobs as jobs_module
+    from reclab.api.main import _run_compare_job
+
+    interactions, item_metadata = _tiny_dataset()
+    job_id = jobs_module.create_job(dataset_label="test")
+    real_get_job = jobs_module.get_job
+    calls = {"n": 0}
+
+    def fake_get_job(jid):
+        calls["n"] += 1
+        # Let the top-of-function check and the first in-loop check see the
+        # real (not-yet-cancelled) state so one architecture actually
+        # trains, then report "cancelled" from then on.
+        if calls["n"] > 2:
+            return jobs_module.Job(
+                id=jid,
+                status="cancelled",
+                dataset_label="test",
+                created_at="x",
+                updated_at="x",
+                result=None,
+                error=None,
+            )
+        return real_get_job(jid)
+
+    monkeypatch.setattr(jobs_module, "get_job", fake_get_job)
+
+    _run_compare_job(job_id, interactions, item_metadata, "user_id", "item_id", 10)
+
+    final = real_get_job(job_id)
+    assert final.status == "cancelled"
+    assert final.result is not None
+    assert 0 < len(final.result["eval_results"]) < 3
+    assert final.result["comparison"] is None

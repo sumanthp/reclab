@@ -12,7 +12,17 @@ export function CompareResults({ result }: { result: CompareResult }) {
 
   return (
     <div>
-      <VerdictBanner comparison={comparison} />
+      {comparison ? (
+        <VerdictBanner comparison={comparison} />
+      ) : (
+        <div className="verdict-banner cancelled">
+          <span className="icon">⏸</span>
+          <p>
+            <strong>Run was cancelled before enough architectures finished for a verdict.</strong>{" "}
+            Numbers below are for whatever completed before the cancellation.
+          </p>
+        </div>
+      )}
 
       <div className="table-wrap">
         <table>
@@ -38,18 +48,18 @@ export function CompareResults({ result }: { result: CompareResult }) {
                   <td>
                     {name}
                     <span className="row-tags">
-                      {comparison.shortlist_pick === name && (
+                      {comparison?.shortlist_pick === name && (
                         <span className="tag pick">#1 pick</span>
                       )}
-                      {comparison.measured_best_recall === name && (
+                      {comparison?.measured_best_recall === name && (
                         <span className="tag best">measured best</span>
                       )}
                     </span>
                   </td>
-                  <td className={comparison.measured_best_recall === name ? "best-cell" : ""}>
+                  <td className={comparison?.measured_best_recall === name ? "best-cell" : ""}>
                     {pct(r.recall_at_k)}
                   </td>
-                  <td className={comparison.measured_best_recall === name ? "best-cell" : ""}>
+                  <td className={comparison?.measured_best_recall === name ? "best-cell" : ""}>
                     {pct(r.ndcg_at_k)}
                   </td>
                   <td className={r.coverage_at_k > 1 ? "anomaly" : ""}>
@@ -58,7 +68,7 @@ export function CompareResults({ result }: { result: CompareResult }) {
                   </td>
                   <td
                     className={
-                      comparison.measured_best_cold_start_recall === name ? "best-cell" : ""
+                      comparison?.measured_best_cold_start_recall === name ? "best-cell" : ""
                     }
                   >
                     {r.cold_start_recall_at_k === null ? "n/a" : pct(r.cold_start_recall_at_k)}
@@ -66,6 +76,11 @@ export function CompareResults({ result }: { result: CompareResult }) {
                   <td>{pct(r.cold_start_surfaced_rate)}</td>
                 </tr>
               ),
+            )}
+            {scored.length === 0 && Object.keys(eval_results).length === 0 && (
+              <tr>
+                <td colSpan={6}>Cancelled before any architecture finished training.</td>
+              </tr>
             )}
           </tbody>
         </table>
@@ -78,22 +93,26 @@ export function CompareResults({ result }: { result: CompareResult }) {
         )}
       </div>
 
-      <div className="detail-grid">
-        {scored.map(([name, r]) => (
-          <div className="detail-card" key={name}>
-            <h3>{name}</h3>
-            <Metric k="Test users" v={r.n_test_users.toLocaleString()} />
-            <Metric k="Recall@K" v={r.recall_at_k.toFixed(3)} />
-            <Metric k="NDCG@K" v={r.ndcg_at_k.toFixed(3)} />
-            <Metric k="Coverage@K" v={r.coverage_at_k.toFixed(3)} />
-            <Metric
-              k="Cold-start recall@K"
-              v={r.cold_start_recall_at_k === null ? "n/a" : r.cold_start_recall_at_k.toFixed(3)}
-            />
-            <Metric k="Cold-start surfaced rate" v={r.cold_start_surfaced_rate.toFixed(3)} />
-          </div>
-        ))}
-      </div>
+      {scored.length > 0 && (
+        <div className="detail-grid">
+          {scored.map(([name, r]) => (
+            <div className="detail-card" key={name}>
+              <h3>{name}</h3>
+              <Metric k="Test users" v={r.n_test_users.toLocaleString()} />
+              <Metric k="Recall@K" v={r.recall_at_k.toFixed(3)} />
+              <Metric k="NDCG@K" v={r.ndcg_at_k.toFixed(3)} />
+              <Metric k="Coverage@K" v={r.coverage_at_k.toFixed(3)} />
+              <Metric
+                k="Cold-start recall@K"
+                v={
+                  r.cold_start_recall_at_k === null ? "n/a" : r.cold_start_recall_at_k.toFixed(3)
+                }
+              />
+              <Metric k="Cold-start surfaced rate" v={r.cold_start_surfaced_rate.toFixed(3)} />
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
