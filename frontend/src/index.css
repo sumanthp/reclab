@@ -1,15 +1,15 @@
 :root {
-  --bg: #f3f6f5;
+  --bg: #f4f6fa;
   --surface: #ffffff;
-  --surface-2: #eaf0ee;
-  --surface-3: #dde6e3;
-  --border: #d2dbd8;
-  --text: #101819;
-  --text-muted: #55655f;
-  --text-faint: #7c8b84;
-  --accent: #0f8a7a;
-  --accent-strong: #0a6c60;
-  --accent-soft: #e0f2ee;
+  --surface-2: #eef2f9;
+  --surface-3: #dfe6f2;
+  --border: #d4dced;
+  --text: #101524;
+  --text-muted: #565f76;
+  --text-faint: #7d869c;
+  --accent: #2563eb;
+  --accent-strong: #1d4ed8;
+  --accent-soft: #e3ecfd;
   --match: #2f7d4f;
   --match-soft: #e4f2e8;
   --mismatch: #b8452f;
@@ -18,8 +18,8 @@
   --warn-soft: #f6ecd6;
   --danger: #b8452f;
   --danger-soft: #fbe8e2;
-  --focus: #0f8a7a;
-  --shadow: 0 1px 2px rgba(16, 24, 25, 0.06), 0 6px 20px rgba(16, 24, 25, 0.05);
+  --focus: #2563eb;
+  --shadow: 0 1px 2px rgba(16, 20, 36, 0.06), 0 6px 20px rgba(16, 20, 36, 0.06);
   --sans:
     -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
@@ -28,17 +28,17 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0b1213;
-    --surface: #121a1c;
-    --surface-2: #172023;
-    --surface-3: #1e2a2d;
-    --border: #263133;
-    --text: #edf3f1;
-    --text-muted: #9db0ac;
-    --text-faint: #71827d;
-    --accent: #2fd6bf;
-    --accent-strong: #57e3cf;
-    --accent-soft: #103330;
+    --bg: #090d17;
+    --surface: #111827;
+    --surface-2: #161e2e;
+    --surface-3: #1e2941;
+    --border: #283252;
+    --text: #eef1f9;
+    --text-muted: #9aa4bf;
+    --text-faint: #6b7591;
+    --accent: #5b9bf7;
+    --accent-strong: #8ab8fb;
+    --accent-soft: #142a4d;
     --match: #62c188;
     --match-soft: #163524;
     --mismatch: #e2775b;
@@ -47,7 +47,7 @@
     --warn-soft: #392c13;
     --danger: #e2775b;
     --danger-soft: #3a2018;
-    --focus: #2fd6bf;
+    --focus: #5b9bf7;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
   }
 }

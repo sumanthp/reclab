@@ -2,6 +2,7 @@
 // explainer for a first-time visitor landing on the GitHub Pages demo, not
 // something a self-hosted user needs cluttering their working screen once
 // they already know what the tool does.
+import { Reveal } from "./Reveal";
 
 function ProfileIcon() {
   return (
@@ -104,132 +105,141 @@ export function AboutSection() {
       </div>
 
       <div className="about-section-block">
-        <div className="about-compare-table">
-          <table>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Managed service</th>
-                <th>Research library</th>
-                <th>reclab</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Explains why an architecture fits your data</td>
-                <td className="about-cell-no">hidden</td>
-                <td className="about-cell-no">no guidance</td>
-                <td className="about-cell-yes">✓ ranked</td>
-              </tr>
-              <tr>
-                <td>Checks that reasoning against measured results on your data</td>
-                <td className="about-cell-no">✕</td>
-                <td className="about-cell-no">up to you</td>
-                <td className="about-cell-yes">✓ built in</td>
-              </tr>
-              <tr>
-                <td>Self-hosted — your data never leaves your machine</td>
-                <td className="about-cell-no">✕ cloud</td>
-                <td className="about-cell-yes">✓</td>
-                <td className="about-cell-yes">✓</td>
-              </tr>
-              <tr>
-                <td>Needs a dedicated rec-sys specialist to use well</td>
-                <td className="about-cell-yes">no insight either way</td>
-                <td className="about-cell-no">yes</td>
-                <td className="about-cell-yes">minimal</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <Reveal>
+          <div className="about-compare-table">
+            <table>
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>Managed service</th>
+                  <th>Research library</th>
+                  <th>reclab</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>Explains why an architecture fits your data</td>
+                  <td className="about-cell-no">hidden</td>
+                  <td className="about-cell-no">no guidance</td>
+                  <td className="about-cell-yes">✓ ranked</td>
+                </tr>
+                <tr>
+                  <td>Checks that reasoning against measured results on your data</td>
+                  <td className="about-cell-no">✕</td>
+                  <td className="about-cell-no">up to you</td>
+                  <td className="about-cell-yes">✓ built in</td>
+                </tr>
+                <tr>
+                  <td>Self-hosted — your data never leaves your machine</td>
+                  <td className="about-cell-no">✕ cloud</td>
+                  <td className="about-cell-yes">✓</td>
+                  <td className="about-cell-yes">✓</td>
+                </tr>
+                <tr>
+                  <td>Needs a dedicated rec-sys specialist to use well</td>
+                  <td className="about-cell-yes">no insight either way</td>
+                  <td className="about-cell-no">yes</td>
+                  <td className="about-cell-yes">minimal</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </Reveal>
       </div>
 
       <div className="about-section-block">
-        <div className="about-steps">
-          <div className="about-step">
-            <span className="about-step-icon">
-              <ProfileIcon />
-            </span>
-            <div>
-              <h3>Profile</h3>
-              <p>
-                Sparsity, cold-start ratio, item metadata richness, interaction volume, sequence
-                length — the signals that actually distinguish one architecture from another.
-              </p>
+        <Reveal>
+          <div className="about-steps">
+            <div className="about-step">
+              <span className="about-step-icon">
+                <ProfileIcon />
+              </span>
+              <div>
+                <h3>Profile</h3>
+                <p>
+                  Sparsity, cold-start ratio, item metadata richness, interaction volume, sequence
+                  length — the signals that actually distinguish one architecture from another.
+                </p>
+              </div>
+            </div>
+            <div className="about-step">
+              <span className="about-step-icon">
+                <ReasonIcon />
+              </span>
+              <div>
+                <h3>Reason</h3>
+                <p>
+                  A planner scores each candidate architecture against that profile and ranks
+                  them, with a plain-language, factor-by-factor rationale for each — not just a
+                  score.
+                </p>
+              </div>
+            </div>
+            <div className="about-step">
+              <span className="about-step-icon">
+                <CompareIcon />
+              </span>
+              <div>
+                <h3>Compare</h3>
+                <p>
+                  Every candidate is genuinely trained and evaluated on a temporal train/test
+                  split, so the shortlist's top pick gets checked against Recall@K, NDCG@K,
+                  coverage, and cold-start metrics — not left as an unverified claim.
+                </p>
+              </div>
             </div>
           </div>
-          <div className="about-step">
-            <span className="about-step-icon">
-              <ReasonIcon />
-            </span>
-            <div>
-              <h3>Reason</h3>
-              <p>
-                A planner scores each candidate architecture against that profile and ranks them,
-                with a plain-language, factor-by-factor rationale for each — not just a score.
-              </p>
-            </div>
-          </div>
-          <div className="about-step">
-            <span className="about-step-icon">
-              <CompareIcon />
-            </span>
-            <div>
-              <h3>Compare</h3>
-              <p>
-                Every candidate is genuinely trained and evaluated on a temporal train/test split,
-                so the shortlist's top pick gets checked against Recall@K, NDCG@K, coverage, and
-                cold-start metrics — not left as an unverified claim.
-              </p>
-            </div>
-          </div>
-        </div>
+        </Reveal>
       </div>
 
       <div className="about-section-block">
-        <div className="about-callout">
-          <span className="about-callout-tag">Checked against real data</span>
-          <p>
-            The planner also flags when its own top pick is a close call — a{" "}
-            <code>low_confidence</code> signal computed from the score margin over the runner-up,
-            not a hedge added after the fact. Run against MovieLens 100K and two Amazon Reviews
-            2023 categories, that flag has fired twice on real data — and both times, the flagged
-            pick turned out to be wrong (the card above is one of them). That's the part of this
-            project I trust most: not that the shortlist is always right, but that it tells you
-            when it doesn't know.{" "}
-            <a
-              href="https://github.com/sumanthp/reclab/blob/main/benchmarks/README.md"
-              target="_blank"
-              rel="noreferrer"
-            >
-              Full write-up →
-            </a>
-          </p>
-        </div>
-      </div>
-
-      <div className="about-section-block">
-        <div className="about-grid">
-          <div>
-            <h3>How it's built</h3>
+        <Reveal>
+          <div className="about-callout">
+            <span className="about-callout-tag">Checked against real data</span>
             <p>
-              All three candidate architectures — matrix factorization, a SASRec-style sequential
-              transformer, and a hybrid encoder + re-ranker — are implemented from scratch in
-              plain NumPy, no PyTorch dependency. The sequential model's hand-derived attention
-              backward pass is checked against numerical gradients, not just "it trained without
-              crashing."
+              The planner also flags when its own top pick is a close call — a{" "}
+              <code>low_confidence</code> signal computed from the score margin over the
+              runner-up, not a hedge added after the fact. Run against MovieLens 100K and two
+              Amazon Reviews 2023 categories, that flag has fired twice on real data — and both
+              times, the flagged pick turned out to be wrong (the card above is one of them).
+              That's the part of this project I trust most: not that the shortlist is always
+              right, but that it tells you when it doesn't know.{" "}
+              <a
+                href="https://github.com/sumanthp/reclab/blob/main/benchmarks/README.md"
+                target="_blank"
+                rel="noreferrer"
+              >
+                Full write-up →
+              </a>
             </p>
           </div>
-          <div>
-            <h3>Who it's for</h3>
-            <p>
-              A team without a dedicated rec-sys specialist deciding what to build first. An ML
-              engineer sanity-checking their own instinct against measured numbers before
-              committing weeks to an architecture. Anyone who'd rather see the reasoning — and
-              its failure modes — than trust a black box.
-            </p>
+        </Reveal>
+      </div>
+
+      <div className="about-section-block">
+        <Reveal>
+          <div className="about-grid">
+            <div>
+              <h3>How it's built</h3>
+              <p>
+                All three candidate architectures — matrix factorization, a SASRec-style
+                sequential transformer, and a hybrid encoder + re-ranker — are implemented from
+                scratch in plain NumPy, no PyTorch dependency. The sequential model's hand-derived
+                attention backward pass is checked against numerical gradients, not just "it
+                trained without crashing."
+              </p>
+            </div>
+            <div>
+              <h3>Who it's for</h3>
+              <p>
+                A team without a dedicated rec-sys specialist deciding what to build first. An ML
+                engineer sanity-checking their own instinct against measured numbers before
+                committing weeks to an architecture. Anyone who'd rather see the reasoning — and
+                its failure modes — than trust a black box.
+              </p>
+            </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

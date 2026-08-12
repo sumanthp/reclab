@@ -41,6 +41,16 @@
   margin: 64px 0;
 }
 
+.reveal {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity 0.6s ease, transform 0.6s ease;
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* full-bleed hero band: breaks out of #root's 980px/24px-padded column to
    paint edge-to-edge, then pads itself back in by the same amount so the
    inner content lines up with the rest of the page. */
@@ -56,6 +66,17 @@
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 44px;
   align-items: center;
+  animation: about-hero-in 0.7s ease both;
+}
+@keyframes about-hero-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 .about-eyebrow {
   display: inline-block;
