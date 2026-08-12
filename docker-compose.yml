@@ -1,0 +1,38 @@
+# Default: just the API, no external database. Per the MVP plan (section 7),
+# a single-user local run shouldn't require standing up Postgres just to try
+# the repo — that's exactly the friction that kills a fast first-run
+# experience. The API is stateless for now (profiling and reasoning-engine
+# calls don't persist anything yet).
+#
+#   docker compose up
+#
+# If/when run history needs to persist for a shared/multi-user deployment,
+# uncomment the `postgres` service and `db` profile below and point the API
+# at it via DATABASE_URL. Until then, SQLite (used automatically, no service
+# needed) is enough for local runs.
+
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - RECLAB_STORAGE=sqlite:///./reclab.db
+    volumes:
+      - ./data:/app/data
+
+  # Optional, for a shared/multi-user deployment. Not required for local use.
+  # postgres:
+  #   image: postgres:16-alpine
+  #   profiles: ["postgres"]
+  #   environment:
+  #     - POSTGRES_USER=reclab
+  #     - POSTGRES_PASSWORD=reclab
+  #     - POSTGRES_DB=reclab
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - pg_data:/var/lib/postgresql/data
+
+# volumes:
+#   pg_data:

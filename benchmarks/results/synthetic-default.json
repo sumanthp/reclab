@@ -1,0 +1,65 @@
+{
+  "dataset": "synthetic",
+  "profile": {
+    "n_users": 500,
+    "n_items": 300,
+    "n_interactions": 7642,
+    "sparsity": 0.9490533333333333,
+    "cold_start_ratio": 0.3,
+    "median_sequence_length": 15.0,
+    "has_item_text": true,
+    "has_item_image": false
+  },
+  "reasoning_engine_shortlist": [
+    {
+      "architecture": "sasrec",
+      "rank": 1,
+      "score": 0.75,
+      "rationale": "boosted: median sequence length 15.0 gives the sequence model enough signal to use"
+    },
+    {
+      "architecture": "two_tower",
+      "rank": 2,
+      "score": 0.5,
+      "rationale": "solid general-purpose baseline for dense collaborative signal"
+    },
+    {
+      "architecture": "hybrid_llm",
+      "rank": 3,
+      "score": 0.35,
+      "rationale": "no strong signal either way; likely not worth the extra cost here"
+    }
+  ],
+  "eval_results": {
+    "two_tower": {
+      "architecture": "TwoTower",
+      "k": 10,
+      "n_test_users": 500,
+      "recall_at_k": 0.22,
+      "ndcg_at_k": 0.0967546686603929,
+      "coverage_at_k": 0.7166666666666667,
+      "cold_start_recall_at_k": 0.0,
+      "cold_start_surfaced_rate": 0.008
+    },
+    "sasrec": {
+      "architecture": "SASRec",
+      "k": 10,
+      "n_test_users": 500,
+      "recall_at_k": 0.196,
+      "ndcg_at_k": 0.08846937714562005,
+      "coverage_at_k": 0.6933333333333334,
+      "cold_start_recall_at_k": 0.0,
+      "cold_start_surfaced_rate": 0.002
+    },
+    "hybrid_llm": {
+      "architecture": "HybridLLM",
+      "k": 10,
+      "n_test_users": 500,
+      "recall_at_k": 0.176,
+      "ndcg_at_k": 0.06494019925088203,
+      "coverage_at_k": 0.9933333333333333,
+      "cold_start_recall_at_k": 0.10526315789473684,
+      "cold_start_surfaced_rate": 1.0
+    }
+  }
+}

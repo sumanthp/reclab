@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Set up Python
+        run: uv python install 3.11
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Lint (ruff)
+        run: uv run ruff check .
+
+      - name: Type-check (mypy)
+        run: uv run mypy src
+
+      - name: Run tests
+        run: uv run pytest -v
+
+      - name: Run full Phase 0/1 benchmark (synthetic data, both scenarios)
+        # This trains and evaluates all three architectures against the
+        # reasoning engine's shortlist on every PR — not a toy smoke test.
+        # It's expected to print a Recall@K mismatch (a genuine, documented
+        # Phase 0 finding, see benchmarks/README.md), so this step checks
+        # that the pipeline runs and produces well-formed output, not that
+        # the shortlist and measured results agree.
+        run: bash scripts/demo.sh
