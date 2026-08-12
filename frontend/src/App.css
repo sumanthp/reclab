@@ -33,35 +33,58 @@
 }
 /* ---------- about (demo mode only) ---------- */
 .about {
-  margin: 8px 0 36px;
-  padding-bottom: 28px;
+  margin-bottom: 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
+}
+.about-section-block {
+  margin: 64px 0;
+}
+
+/* full-bleed hero band: breaks out of #root's 980px/24px-padded column to
+   paint edge-to-edge, then pads itself back in by the same amount so the
+   inner content lines up with the rest of the page. */
+.about-hero-band {
+  margin: 0 -24px 0;
+  padding: 56px 24px 64px;
+  background:
+    radial-gradient(ellipse 900px 420px at 15% 0%, var(--accent-soft), transparent 60%),
+    radial-gradient(ellipse 700px 380px at 100% 20%, var(--accent-soft), transparent 55%);
 }
 .about-hero {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 36px;
+  gap: 44px;
   align-items: center;
-  margin-bottom: 32px;
+}
+.about-eyebrow {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--accent-strong);
+  margin-bottom: 14px;
 }
 .about-hero-copy h1 {
-  font-size: 26px;
-  letter-spacing: -0.015em;
-  margin: 0 0 12px;
-  line-height: 1.2;
+  font-size: clamp(30px, 4.4vw, 48px);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+  margin: 0 0 16px;
 }
 .about-hero-copy p {
   color: var(--text-muted);
-  font-size: 14.5px;
+  font-size: 15.5px;
   line-height: 1.65;
-  margin: 0 0 20px;
+  margin: 0 0 24px;
+  max-width: 52ch;
 }
 .about-stats {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
+  margin-top: 18px;
   font-size: 12px;
   font-weight: 600;
   color: var(--text-faint);
@@ -69,18 +92,45 @@
 .about-stats-dot {
   color: var(--border);
 }
-.about-hero-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+
+/* "browser window" framing for the real shortlist-card preview */
+.about-window {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
 }
-.about-hero-preview-label {
+.about-window-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+}
+.about-window-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--surface-3);
+}
+.about-window-title {
+  margin-left: 8px;
   font-size: 11px;
   font-weight: 600;
   color: var(--text-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.about-window-body {
+  padding: 18px;
 }
 .about-preview-card {
   margin: 0;
+  border: none;
+  padding: 0;
 }
 .about-preview-card .rec-rationale {
   margin-bottom: 0;
@@ -88,20 +138,18 @@
 
 .about-compare-table {
   overflow-x: auto;
-  margin-bottom: 32px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
 }
 .about-compare-table table {
   width: 100%;
+  min-width: 720px;
   table-layout: fixed;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .about-compare-table th,
 .about-compare-table td {
   text-align: left;
-  padding: 10px 14px;
+  padding: 14px 16px;
   border-bottom: 1px solid var(--border);
   white-space: normal;
   font-family: var(--sans);
@@ -109,17 +157,20 @@
 .about-compare-table th:first-child,
 .about-compare-table td:first-child {
   width: 36%;
+  padding-left: 0;
 }
 .about-compare-table tbody td:first-child {
   color: var(--text-muted);
 }
-.about-compare-table th {
+.about-compare-table thead th {
   font-size: 10.5px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
   color: var(--text-faint);
-  background: var(--surface-2);
+  border-bottom: 2px solid var(--border);
+  padding-top: 0;
+  white-space: nowrap;
 }
 .about-compare-table th:last-child {
   color: var(--accent-strong);
@@ -129,6 +180,7 @@
 }
 .about-cell-yes {
   color: var(--match);
+  font-weight: 600;
 }
 .about-cell-no {
   color: var(--text-faint);
@@ -136,37 +188,34 @@
 
 .about-steps {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 16px;
-  margin-bottom: 24px;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 32px;
 }
 .about-step {
   display: flex;
-  gap: 12px;
+  gap: 14px;
   align-items: flex-start;
 }
-.about-step-num {
+.about-step-icon {
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 999px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
   background: var(--accent-soft);
   color: var(--accent-strong);
-  font-size: 12px;
-  font-weight: 700;
 }
 .about-step h3 {
-  margin: 0 0 4px;
-  font-size: 14px;
+  margin: 0 0 5px;
+  font-size: 15px;
 }
 .about-step p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 13px;
+  line-height: 1.55;
 }
 .about-callout {
   display: flex;
@@ -175,8 +224,7 @@
   background: var(--accent-soft);
   border: 1px solid var(--accent);
   border-radius: 10px;
-  padding: 16px 18px;
-  margin-bottom: 24px;
+  padding: 18px 20px;
 }
 .about-callout-tag {
   align-self: flex-start;
@@ -208,17 +256,16 @@
 .about-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 24px;
-  margin-bottom: 24px;
+  gap: 32px;
 }
 .about-grid h3 {
-  margin: 0 0 6px;
-  font-size: 14px;
+  margin: 0 0 8px;
+  font-size: 15px;
 }
 .about-grid p {
   margin: 0;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 13.5px;
   line-height: 1.6;
 }
 .about-grid code {
@@ -254,11 +301,21 @@
 
 /* ---------- header ---------- */
 .header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 24px 0 20px;
+  padding: 16px 0;
+  margin: 0 -24px 0;
+  padding-left: 24px;
+  padding-right: 24px;
   flex-wrap: wrap;
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--border);
 }
 .wordmark {
   font-weight: 700;
@@ -274,6 +331,16 @@
 }
 .header-actions {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.header-github {
+  display: flex;
+  color: var(--text-faint);
+}
+.header-github:hover {
+  color: var(--text);
 }
 
 .btn {
