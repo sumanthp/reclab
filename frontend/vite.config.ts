@@ -18,7 +18,13 @@ export default defineConfig({
     },
   },
   test: {
-    environment: 'jsdom',
+    // happy-dom, not jsdom: jsdom 30 hits a hard incompatibility on Node 24
+    // ("webidl.util.markAsUncloneable is not a function", inside undici's
+    // CacheStorage, on jsdom's own environment init) — reproduces in CI's
+    // Node 24 runner even though it works locally on Node 22. happy-dom is
+    // the standard Vitest-recommended alternative and avoids the whole
+    // dependency chain that bug lives in.
+    environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
   },
