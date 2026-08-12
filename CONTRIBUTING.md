@@ -33,6 +33,30 @@ uv run ruff check .
 uv run mypy src
 ```
 
+`AnthropicReranker` (`src/reclab/architectures/rerankers.py`) is behind the
+optional `llm` extra (`uv sync --extra llm`) since it needs
+`ANTHROPIC_API_KEY` and network access — the default install and default
+`hybrid_llm` re-ranker (`LexicalReranker`) stay credential/network-free. Its
+own tests (`tests/architectures/test_rerankers.py`) inject a fake client and
+run under the default install, no key needed.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm test           # Vitest + React Testing Library, isolated component tests
+npm run lint        # oxlint
+npm run build       # tsc -b && vite build
+```
+
+`npm run test:e2e` runs the Playwright suite (`frontend/e2e/`) against the
+real backend and real frontend together — it starts both servers itself (see
+`frontend/playwright.config.ts`), so it needs `uv sync --extra dev` done
+first but no manual server startup. It's intentionally scoped to 2-3
+golden-path flows, not exhaustive — that's what the Vitest and pytest suites
+are for.
+
 ## What's most useful to contribute right now
 
 1. **Calibrating the reasoning engine's ranking, not just its confidence
