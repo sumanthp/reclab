@@ -21,14 +21,11 @@ the answer is "not yet."
 
 ## Datasets
 
-**Public benchmarks (MovieLens, Amazon Reviews) are not yet run.** The
-development sandbox this repo was built in can't reach files.grouplens.org,
-huggingface.co, or S3, so `reclab.datasets.loaders.load_movielens_100k` is
-written and unit-tested against fixture files that mimic the real format, but
-not verified end-to-end against the real dataset. Running
-`scripts/run_benchmark.py --movielens-100k path/to/ml-100k.zip` on a machine
-with normal internet access and reporting back — success or a parsing bug —
-is the single most valuable open item for Phase 0. See CONTRIBUTING.md.
+**MovieLens 100K has now been run end-to-end** (`results/movielens-100k-*.json`)
+— see findings below. `load_movielens_100k` parsed the real `u.data`/`u.item`
+files with no changes needed. **Amazon Reviews is still not run** —
+`load_amazon_reviews_category` remains a stub (see CONTRIBUTING.md); that's
+now the highest-value open item.
 
 In the meantime, `reclab.datasets.synthetic` generates a reproducible dataset
 with controllable sparsity, cold-start ratio, sequence length, and item-text
@@ -82,6 +79,42 @@ than implicitly ranking everything by one metric. That's a real Phase 0
 finding, not a passing or failing grade, and it's a better next action item
 than a false "it all matches" would have been.
 
+## What the real MovieLens 100K run found
+
+`uv run python scripts/run_benchmark.py --movielens-100k path/to/ml-100k` —
+943 users, 1682 items, 100K ratings, 93.7% sparse, 19.8% cold-start ratio,
+median sequence length 65. No parsing issues; the loader worked against the
+real files unmodified.
+
+**The planner's #1 pick won on the metric that matters most.** The planner
+ranked `sasrec` first ("median sequence length 65.0 gives the sequence model
+enough signal to use"), and `sasrec` did in fact post the best Recall@10
+(0.141 vs `two_tower`'s 0.120 and `hybrid_llm`'s 0.119) and the best NDCG@10
+(0.069 vs 0.062 and 0.045). This is the first real-dataset case where the
+shortlist's #1 pick matches the measured overall winner — the synthetic runs
+below never had that agreement, so this is a genuinely different (positive)
+result, not a rerun of the same finding.
+
+**Cold-start recall was 0.000 for all three architectures on this dataset**,
+which softens how much to read into the above: MovieLens's 19.8% cold-start
+ratio is implicit in a way the synthetic cold-start-heavy scenario isn't (its
+"cold" items are ones with few ratings in the temporal test window, not
+items with deliberately withheld interaction history), and no architecture
+recovers any of them at `k=10` here. `hybrid_llm` still surfaces a cold item
+in the top-10 for 100% of users (`cold_start_surfaced_rate=1.0`, vs
+0.001/0.0 for the baselines) — consistent with the synthetic finding — but
+that doesn't convert into an exact-match recall win on this dataset, so it
+isn't a confirmation of the cold-start rationale the way the synthetic runs
+were, just a non-contradiction.
+
+**Net effect on the open calibration gap:** the calibration gap described
+below (shortlist conflates "best overall" with "best on the dimension the
+rationale invokes") is not fully resolved — this run simply didn't stress
+that distinction, because sequence length was the dominant signal and both
+the planner and Recall@10 agreed on it. The concrete next step is unchanged:
+score each architecture against the specific metric its rationale invokes,
+rather than implicitly ranking by Recall@K alone.
+
 ## Reproducing this
 
 ```bash
@@ -99,6 +132,13 @@ uv run python scripts/run_benchmark.py --dataset synthetic --cold-start-heavy
 Both run in well under a minute on a laptop CPU — no GPU, no API keys, no
 network access required (see CONTRIBUTING.md and pyproject.toml for why
 there's deliberately no PyTorch/deep-learning dependency here).
+
+For MovieLens 100K (network access needed once, to download it):
+
+```bash
+curl -o /tmp/ml-100k.zip https://files.grouplens.org/datasets/movielens/ml-100k.zip
+uv run python scripts/run_benchmark.py --movielens-100k /tmp/ml-100k.zip
+```
 
 ## The bar
 

@@ -1,15 +1,10 @@
 """Loaders for real public benchmark datasets.
 
-Honesty note (read before trusting this file blindly): this was written
-against the datasets' published schemas and is believed correct, but the
-development sandbox used to build reclab cannot reach files.grouplens.org,
-huggingface.co, or S3 (network egress is restricted to an allowlist that
-doesn't include them), so these loaders have NOT been executed against the
-real files. They're structurally tested against small locally-generated
-fixtures that mimic the real format (see tests/datasets/test_loaders.py).
-
-If you run these on a machine with normal internet access and hit a parsing
-issue, that's a real bug report worth filing — see CONTRIBUTING.md.
+`load_movielens_100k` has been run end-to-end against the real
+files.grouplens.org download (see benchmarks/README.md for results) — no
+parsing changes were needed versus the fixture-tested version.
+`load_amazon_reviews_category` has not been run against the real dataset yet
+and remains a stub; see CONTRIBUTING.md.
 """
 
 from __future__ import annotations

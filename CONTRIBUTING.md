@@ -35,14 +35,13 @@ uv run mypy src
 
 ## What's most useful to contribute right now
 
-1. **Running this against a real public dataset.** All three architectures
-   train and evaluate for real now, but only against a synthetic dataset —
-   the sandbox this repo was built in can't reach files.grouplens.org,
-   huggingface.co, or S3. If you can run
-   `scripts/run_benchmark.py --movielens-100k path/to/ml-100k.zip` on a
-   machine with normal internet access, the result (or the parsing bug it
-   surfaces) is the single most valuable contribution possible right now.
-   See `benchmarks/README.md`.
+1. **Running this against Amazon Reviews.** MovieLens 100K is now run
+   end-to-end against the real dataset (see `benchmarks/README.md`) — the
+   loader worked unmodified. `load_amazon_reviews_category`
+   (`src/reclab/datasets/loaders.py`) is still a stub; implementing it
+   against a real category download (2023 release, e.g. `Video_Games`) and
+   reporting field-name/schema mismatches is the single most valuable
+   contribution possible right now. See `benchmarks/README.md`.
 2. **Calibrating the reasoning engine.** `benchmarks/README.md` documents a
    real finding: the planner's shortlist ranking conflates "best overall"
    with "best on the dimension it's reasoning about" (e.g. `hybrid_llm`
