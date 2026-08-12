@@ -2,7 +2,7 @@ import pandas as pd
 
 from reclab.architectures.two_tower import TwoTower
 from reclab.datasets import SyntheticConfig, generate_synthetic_dataset
-from reclab.eval.harness import run_eval, temporal_train_test_split
+from reclab.eval.harness import MAX_EXAMPLE_RECOMMENDATIONS, run_eval, temporal_train_test_split
 
 
 def test_temporal_split_holds_out_last_n_per_user():
@@ -54,6 +54,36 @@ def test_run_eval_produces_sane_result():
     assert 0.0 <= result.ndcg_at_k <= 1.0
     assert 0.0 <= result.coverage_at_k <= 1.0
     assert 0.0 <= result.cold_start_surfaced_rate <= 1.0
+
+
+def test_run_eval_captures_example_recommendations():
+    cfg = SyntheticConfig(
+        n_users=80, n_items=60, n_categories=4, median_sequence_length=10, seed=11
+    )
+    interactions, _ = generate_synthetic_dataset(cfg)
+    train, test = temporal_train_test_split(interactions, holdout_n=1)
+
+    result = run_eval(TwoTower(embedding_dim=8, epochs=5), train, test, k=10)
+
+    assert 0 < len(result.example_recommendations) <= MAX_EXAMPLE_RECOMMENDATIONS
+    for example in result.example_recommendations:
+        assert example.user_id is not None
+        assert len(example.recommended) <= 10
+        assert example.held_out  # every test user has at least one held-out item
+        assert example.hit == bool(set(example.recommended) & set(example.held_out))
+
+
+def test_example_recommendations_capped_even_with_many_test_users():
+    cfg = SyntheticConfig(
+        n_users=200, n_items=60, n_categories=4, median_sequence_length=10, seed=13
+    )
+    interactions, _ = generate_synthetic_dataset(cfg)
+    train, test = temporal_train_test_split(interactions, holdout_n=1)
+
+    result = run_eval(TwoTower(embedding_dim=8, epochs=5), train, test, k=10)
+
+    assert result.n_test_users > MAX_EXAMPLE_RECOMMENDATIONS
+    assert len(result.example_recommendations) == MAX_EXAMPLE_RECOMMENDATIONS
 
 
 def test_run_eval_reports_cold_start_recall_when_applicable():

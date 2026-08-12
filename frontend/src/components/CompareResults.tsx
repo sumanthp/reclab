@@ -3,15 +3,37 @@ import { isSkipped } from "../lib/types";
 import { pct } from "../lib/format";
 import { VerdictBanner } from "./VerdictBanner";
 
-export function CompareResults({ result }: { result: CompareResult }) {
+interface Props {
+  result: CompareResult;
+  datasetLabel?: string | null;
+}
+
+export function CompareResults({ result, datasetLabel }: Props) {
   const { eval_results, comparison } = result;
   const scored = Object.entries(eval_results).filter(
     (entry): entry is [string, EvalResult] => !isSkipped(entry[1]),
   );
   const anyAnomaly = scored.some(([, r]) => r.coverage_at_k > 1);
 
+  function handleDownload() {
+    const blob = new Blob([JSON.stringify(result, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const slug = (datasetLabel ?? "results").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+    a.href = url;
+    a.download = `reclab-${slug}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   return (
     <div>
+      <div className="compare-actions">
+        <button type="button" className="btn btn-ghost" onClick={handleDownload}>
+          Download results (JSON)
+        </button>
+      </div>
+
       {comparison ? (
         <VerdictBanner comparison={comparison} />
       ) : (
@@ -109,6 +131,36 @@ export function CompareResults({ result }: { result: CompareResult }) {
                 }
               />
               <Metric k="Cold-start surfaced rate" v={r.cold_start_surfaced_rate.toFixed(3)} />
+              {r.example_recommendations.length > 0 && (
+                <details className="examples">
+                  <summary>
+                    <span className="chev">▸</span> Example recommendations
+                  </summary>
+                  <div className="examples-list">
+                    {r.example_recommendations.map((ex) => (
+                      <div
+                        className={`example-row ${ex.hit ? "hit" : "miss"}`}
+                        key={String(ex.user_id)}
+                      >
+                        <div className="example-header">
+                          <span className="example-user">user {ex.user_id}</span>
+                          <span className={`example-badge ${ex.hit ? "hit" : "miss"}`}>
+                            {ex.hit ? "hit" : "miss"}
+                          </span>
+                        </div>
+                        <div className="example-line">
+                          <span className="example-label">held out</span>{" "}
+                          {ex.held_out.join(", ")}
+                        </div>
+                        <div className="example-line">
+                          <span className="example-label">recommended</span>{" "}
+                          {ex.recommended.join(", ")}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </details>
+              )}
             </div>
           ))}
         </div>

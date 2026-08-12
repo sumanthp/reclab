@@ -7,6 +7,6 @@ before any UI or sandbox is built on top of it. If it doesn't hold up, this
 module gets rebuilt before anything else does.
 """
 
-from reclab.reasoning_engine.planner import Recommendation, recommend_architectures
+from reclab.reasoning_engine.planner import Recommendation, ScoreFactor, recommend_architectures
 
-__all__ = ["Recommendation", "recommend_architectures"]
+__all__ = ["Recommendation", "ScoreFactor", "recommend_architectures"]

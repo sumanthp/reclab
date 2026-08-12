@@ -34,13 +34,25 @@ def ndcg_at_k(recommended: Sequence[Any], relevant: set[Any], k: int) -> float:
     return dcg / idcg
 
 
-def coverage_at_k(all_recommendations: Sequence[Sequence[Any]], catalog_size: int, k: int) -> float:
+def coverage_at_k(all_recommendations: Sequence[Sequence[Any]], catalog: set[Any], k: int) -> float:
     """Fraction of the item catalog that appears in at least one user's
     top-k recommendations. Low coverage with high recall/NDCG is a sign of a
-    model that's over-fit to a small popular slice of the catalog."""
-    if catalog_size == 0:
+    model that's over-fit to a small popular slice of the catalog.
+
+    Takes the actual catalog *set*, not just its size — a real bug found by
+    running this against Amazon Reviews data: hybrid_llm's candidate pool
+    isn't limited to the train/test interaction catalog (it can recommend
+    items with zero training interactions by design, see
+    architectures/hybrid_llm.py), so items outside the catalog were
+    inflating the numerator and coverage_at_k could exceed 1.0 — nonsensical
+    for a fraction. Recommendations are now intersected with the catalog
+    before counting: you can't "cover" catalog items you were never asked
+    about, so recommending items outside it doesn't count toward coverage
+    of it either way. See benchmarks/README.md for the real-data finding
+    this fixes."""
+    if not catalog:
         return 0.0
     recommended_items: set[Any] = set()
     for recs in all_recommendations:
         recommended_items.update(recs[:k])
-    return len(recommended_items) / catalog_size
+    return len(recommended_items & catalog) / len(catalog)

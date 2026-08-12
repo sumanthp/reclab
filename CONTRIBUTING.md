@@ -35,34 +35,30 @@ uv run mypy src
 
 ## What's most useful to contribute right now
 
-1. **Calibrating the reasoning engine.** `benchmarks/README.md` documents a
-   finding confirmed on two real datasets now: the planner's shortlist
-   ranking conflates "best overall" with "best on the dimension it's
-   reasoning about" (e.g. `hybrid_llm` correctly wins on cold-start recall
-   but the planner's ranking implies it should win on Recall@K overall,
-   which it doesn't at this scale, and on Amazon Reviews' `All_Beauty`
-   category the planner's own "no strong signal" pick was wrong). Scoring
-   architectures against the metric each rationale actually invokes, instead
-   of one blended ranking, is the concrete next step — see
-   `src/reclab/reasoning_engine/planner.py`.
-2. **Fixing `coverage_at_k` for architectures with an unrestricted candidate
-   pool.** On Amazon Reviews, `hybrid_llm` scored `coverage_at_k=1.53` —
-   above the theoretical max of 1.0 — because it draws candidates from the
-   full item metadata catalog (112K products), not just the train/test
-   interaction catalog `coverage_at_k`'s denominator uses. See the "metric
-   definition edge case" note in `benchmarks/README.md` before picking a
-   fix — narrowing `hybrid_llm`'s candidates would remove the cold-item
-   behavior the metric is supposed to reward, so this needs a real decision,
-   not a quick patch.
-3. **Running this against more Amazon Reviews categories.** Only
-   `All_Beauty` (small, 356 items) has been run — a denser or
-   higher-cold-start category (`Video_Games`, `Musical_Instruments`) would
-   be a useful additional data point for the calibration work above. See
-   `benchmarks/README.md` for the download commands.
-4. **A fourth architecture** (a GNN-based approach is the natural next
+1. **Calibrating the reasoning engine's ranking, not just its confidence
+   signal.** `benchmarks/README.md` documents a finding confirmed on three
+   real datasets now (MovieLens, Amazon Reviews' `All_Beauty` and
+   `Gift_Cards`): the planner's shortlist ranking conflates "best overall"
+   with "best on the dimension it's reasoning about." Two of three
+   low-confidence real-data picks have now been wrong. `Recommendation`
+   already surfaces that thinness (`low_confidence`, `margin_to_next` —
+   see `src/reclab/reasoning_engine/planner.py`), which is a real fix, but
+   it's a "tell the truth about the current heuristic" fix, not a
+   "the heuristic now ranks correctly" fix. Scoring architectures against
+   the metric each rationale actually invokes, instead of one blended
+   ranking, is still the deeper, unstarted next step.
+2. **Running this against denser/larger Amazon Reviews categories.**
+   `All_Beauty` (356 items) and `Gift_Cards` (129 items) are both small and
+   both produced the same low-confidence-mismatch pattern — a genuinely
+   denser category (`Video_Games`, `Musical_Instruments`) would be a
+   different kind of data point, not just a third small one. Fair warning:
+   their 5-core CSVs are 30–50MB (hundreds of thousands of rows), slow
+   going for the NumPy-only architectures — that's *why* they haven't been
+   run yet in this repo, not an oversight.
+3. **A fourth architecture** (a GNN-based approach is the natural next
    candidate — see the MVP plan's out-of-scope-for-v0.1 list). Same interface,
    same registration process as the three that exist.
-5. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
+4. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
    interface in `src/reclab/architectures/rerankers.py` against an actual LLM
    API, as an alternative to the default TF-IDF lexical one.
 

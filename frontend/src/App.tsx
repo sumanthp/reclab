@@ -330,7 +330,9 @@ function App() {
               </div>
             )}
 
-            {run && run.result && <CompareResults result={run.result} />}
+            {run && run.result && (
+              <CompareResults result={run.result} datasetLabel={run.dataset_label} />
+            )}
           </section>
         </>
       )}

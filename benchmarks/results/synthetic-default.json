@@ -15,19 +15,43 @@
       "architecture": "sasrec",
       "rank": 1,
       "score": 0.75,
-      "rationale": "boosted: median sequence length 15.0 gives the sequence model enough signal to use"
+      "rationale": "boosted: median sequence length 15.0 gives the sequence model enough signal to use",
+      "factors": [
+        {
+          "detail": "boosted: median sequence length 15.0 gives the sequence model enough signal to use",
+          "effect": 0.25
+        }
+      ],
+      "margin_to_next": 0.25,
+      "low_confidence": false
     },
     {
       "architecture": "two_tower",
       "rank": 2,
       "score": 0.5,
-      "rationale": "solid general-purpose baseline for dense collaborative signal"
+      "rationale": "solid general-purpose baseline for dense collaborative signal",
+      "factors": [
+        {
+          "detail": "solid general-purpose baseline for dense collaborative signal",
+          "effect": 0.0
+        }
+      ],
+      "margin_to_next": 0.15000000000000002,
+      "low_confidence": false
     },
     {
       "architecture": "hybrid_llm",
       "rank": 3,
       "score": 0.35,
-      "rationale": "no strong signal either way; likely not worth the extra cost here"
+      "rationale": "no strong signal either way; likely not worth the extra cost here",
+      "factors": [
+        {
+          "detail": "no strong signal either way; likely not worth the extra cost here",
+          "effect": 0.0
+        }
+      ],
+      "margin_to_next": null,
+      "low_confidence": false
     }
   ],
   "eval_results": {
@@ -39,7 +63,104 @@
       "ndcg_at_k": 0.0967546686603929,
       "coverage_at_k": 0.7166666666666667,
       "cold_start_recall_at_k": 0.0,
-      "cold_start_surfaced_rate": 0.008
+      "cold_start_surfaced_rate": 0.008,
+      "example_recommendations": [
+        {
+          "user_id": "u0",
+          "recommended": [
+            "i177",
+            "i250",
+            "i17",
+            "i286",
+            "i141",
+            "i96",
+            "i118",
+            "i117",
+            "i272",
+            "i71"
+          ],
+          "held_out": [
+            "i82"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u1",
+          "recommended": [
+            "i177",
+            "i220",
+            "i286",
+            "i118",
+            "i17",
+            "i250",
+            "i141",
+            "i99",
+            "i167",
+            "i51"
+          ],
+          "held_out": [
+            "i167"
+          ],
+          "hit": true
+        },
+        {
+          "user_id": "u10",
+          "recommended": [
+            "i280",
+            "i166",
+            "i38",
+            "i210",
+            "i135",
+            "i153",
+            "i52",
+            "i43",
+            "i142",
+            "i47"
+          ],
+          "held_out": [
+            "i29"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u100",
+          "recommended": [
+            "i126",
+            "i55",
+            "i197",
+            "i171",
+            "i279",
+            "i195",
+            "i0",
+            "i137",
+            "i35",
+            "i217"
+          ],
+          "held_out": [
+            "i146"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u101",
+          "recommended": [
+            "i34",
+            "i219",
+            "i144",
+            "i178",
+            "i63",
+            "i180",
+            "i194",
+            "i140",
+            "i201",
+            "i292"
+          ],
+          "held_out": [
+            "i199"
+          ],
+          "hit": false
+        }
+      ]
     },
     "sasrec": {
       "architecture": "SASRec",
@@ -49,7 +170,104 @@
       "ndcg_at_k": 0.08846937714562005,
       "coverage_at_k": 0.6933333333333334,
       "cold_start_recall_at_k": 0.0,
-      "cold_start_surfaced_rate": 0.002
+      "cold_start_surfaced_rate": 0.002,
+      "example_recommendations": [
+        {
+          "user_id": "u0",
+          "recommended": [
+            "i272",
+            "i286",
+            "i96",
+            "i156",
+            "i77",
+            "i22",
+            "i141",
+            "i261",
+            "i177",
+            "i117"
+          ],
+          "held_out": [
+            "i82"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u1",
+          "recommended": [
+            "i250",
+            "i140",
+            "i220",
+            "i144",
+            "i80",
+            "i180",
+            "i99",
+            "i223",
+            "i240",
+            "i272"
+          ],
+          "held_out": [
+            "i167"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u10",
+          "recommended": [
+            "i193",
+            "i210",
+            "i291",
+            "i189",
+            "i200",
+            "i142",
+            "i52",
+            "i110",
+            "i153",
+            "i95"
+          ],
+          "held_out": [
+            "i29"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u100",
+          "recommended": [
+            "i197",
+            "i195",
+            "i35",
+            "i146",
+            "i137",
+            "i171",
+            "i126",
+            "i170",
+            "i279",
+            "i0"
+          ],
+          "held_out": [
+            "i146"
+          ],
+          "hit": true
+        },
+        {
+          "user_id": "u101",
+          "recommended": [
+            "i292",
+            "i194",
+            "i34",
+            "i180",
+            "i47",
+            "i219",
+            "i140",
+            "i144",
+            "i201",
+            "i178"
+          ],
+          "held_out": [
+            "i199"
+          ],
+          "hit": false
+        }
+      ]
     },
     "hybrid_llm": {
       "architecture": "HybridLLM",
@@ -59,7 +277,104 @@
       "ndcg_at_k": 0.06494019925088203,
       "coverage_at_k": 0.9933333333333333,
       "cold_start_recall_at_k": 0.10526315789473684,
-      "cold_start_surfaced_rate": 1.0
+      "cold_start_surfaced_rate": 1.0,
+      "example_recommendations": [
+        {
+          "user_id": "u0",
+          "recommended": [
+            "i255",
+            "i8",
+            "i272",
+            "i96",
+            "i77",
+            "i177",
+            "i156",
+            "i117",
+            "i240",
+            "i250"
+          ],
+          "held_out": [
+            "i82"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u1",
+          "recommended": [
+            "i40",
+            "i229",
+            "i250",
+            "i272",
+            "i220",
+            "i99",
+            "i141",
+            "i156",
+            "i223",
+            "i140"
+          ],
+          "held_out": [
+            "i167"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u10",
+          "recommended": [
+            "i62",
+            "i225",
+            "i193",
+            "i210",
+            "i142",
+            "i110",
+            "i189",
+            "i291",
+            "i95",
+            "i135"
+          ],
+          "held_out": [
+            "i29"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u100",
+          "recommended": [
+            "i242",
+            "i6",
+            "i137",
+            "i171",
+            "i126",
+            "i195",
+            "i170",
+            "i0",
+            "i197",
+            "i35"
+          ],
+          "held_out": [
+            "i146"
+          ],
+          "hit": false
+        },
+        {
+          "user_id": "u101",
+          "recommended": [
+            "i23",
+            "i273",
+            "i47",
+            "i292",
+            "i140",
+            "i219",
+            "i180",
+            "i201",
+            "i34",
+            "i194"
+          ],
+          "held_out": [
+            "i199"
+          ],
+          "hit": false
+        }
+      ]
     }
   },
   "comparison": {

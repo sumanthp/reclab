@@ -1,15 +1,14 @@
 import type { ArchitectureInfo, Recommendation } from "../lib/types";
 
-// Layer 1 is `rationale` (prose, always shown) plus the architecture's
-// one-line description. Layer 2 is the raw score and the architecture's
-// static strengths/weaknesses/cost profile from /architectures — not a
-// parsed breakdown of the rationale sentence, deliberately: the backend's
-// Recommendation.rationale is a semicolon-joined prose string meant for a
-// CLI print, and parsing it client-side to reconstruct structured
-// "boosted/penalized" chips would be exactly the fragile approach flagged
-// as an open question in docs/architecture/ui-ux-plan.md section 5. If
-// that field becomes structured on the backend, this is where the richer
-// per-factor detail would go.
+// Layer 1 is `rationale` (prose, always shown) plus a "close call" flag on
+// rank 1 when its score margin over #2 is thin (see
+// reasoning_engine/planner.py's LOW_CONFIDENCE_MARGIN — evidence-grounded
+// from a real case where a 0.15-point margin turned out to be the wrong
+// pick, see benchmarks/README.md). Layer 2 shows the real structured
+// `factors` the backend scored this architecture on, plus its static
+// strengths/weaknesses/cost profile from /architectures — no client-side
+// parsing of the prose `rationale` string, which used to be the only
+// option here (see docs/architecture/ui-ux-plan.md section 5).
 interface Props {
   shortlist: Recommendation[];
   architectureInfo: Record<string, ArchitectureInfo>;
@@ -25,6 +24,18 @@ export function ShortlistCards({ shortlist, architectureInfo }: Props) {
             <div className="rec-top">
               <span className="rank-badge">#{rec.rank}</span>
               <span className="arch-name">{rec.architecture}</span>
+              {rec.rank === 1 && rec.low_confidence && (
+                <span
+                  className="confidence-flag"
+                  title={
+                    rec.margin_to_next !== null
+                      ? `Only ${rec.margin_to_next.toFixed(2)} points ahead of #2 — not a strong signal either way`
+                      : undefined
+                  }
+                >
+                  close call
+                </span>
+              )}
               <span className="score-track">
                 <span className="score-fill" style={{ width: `${rec.score * 100}%` }} />
               </span>
@@ -36,7 +47,20 @@ export function ShortlistCards({ shortlist, architectureInfo }: Props) {
                 <span className="chev">▸</span> Details
               </summary>
               <div className="layer2-body">
-                <div className="layer2-score">score = {rec.score.toFixed(3)}</div>
+                <div className="factors-list">
+                  {rec.factors.map((f) => (
+                    <div className="factor-row" key={f.detail}>
+                      <span
+                        className={`factor-effect ${
+                          f.effect > 0 ? "boost" : f.effect < 0 ? "penalty" : "neutral"
+                        }`}
+                      >
+                        {f.effect === 0 ? "base" : `${f.effect > 0 ? "+" : ""}${f.effect.toFixed(2)}`}
+                      </span>
+                      <span className="factor-detail">{f.detail}</span>
+                    </div>
+                  ))}
+                </div>
                 {info && (
                   <>
                     <p className="layer2-desc">{info.description}</p>

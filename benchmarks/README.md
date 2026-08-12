@@ -150,28 +150,59 @@ architecture (`hybrid_llm`'s rationale here was literally "no strong signal
 either way" — the planner effectively guessed with 356 items, and the guess
 was wrong).
 
-**A metric-definition edge case also surfaced:** `hybrid_llm`'s
-`coverage_at_k` came out to 1.528 — above 1.0, which shouldn't be possible
-for a fraction. Traced to `hybrid_llm`'s re-ranker drawing candidates from
-the full item metadata catalog (112,590 products in `All_Beauty`), not just
-the 356 items with interactions, so it can recommend items outside the
-train/test catalog that `coverage_at_k`'s denominator (`catalog_size`,
-computed from train+test only) doesn't count. This is arguably correct
-behavior for `hybrid_llm` specifically — recommending truly cold items with
-zero interaction history is the entire point of a content-based re-ranker —
-but it means `coverage_at_k` as currently defined isn't a fair comparison
-across architectures with different candidate universes. Left as-is and
-flagged here rather than silently patched, since narrowing `hybrid_llm`'s
-candidates to the interaction catalog would remove the exact behavior being
-evaluated; this needs a real design decision, not a guess.
+**A metric-definition bug was found and fixed here.** `hybrid_llm`'s
+`coverage_at_k` originally came out to 1.528 — above 1.0, which shouldn't be
+possible for a fraction. Traced to `hybrid_llm`'s re-ranker drawing
+candidates from the full item metadata catalog (112,590 products in
+`All_Beauty`), not just the 356 items with interactions, so it could
+recommend items outside the train/test catalog that `coverage_at_k`
+counted toward the numerator without checking they were actually in the
+catalog it claims to measure coverage of. **Fixed**: `coverage_at_k` now
+intersects recommendations with the actual catalog set before dividing
+(`src/reclab/eval/metrics.py`) — you can't "cover" catalog items you were
+never asked about, so items outside it (hybrid_llm's real cold-start
+exploration, already captured separately by `cold_start_surfaced_rate`)
+correctly don't count either way. Re-run after the fix: `hybrid_llm`'s
+`coverage_at_k` on this dataset is `0.728`, bounded like every other
+architecture's. See `tests/eval/test_metrics.py` for the regression test.
 
-**Net effect:** two real datasets now checked. MovieLens matched the
-planner's pick; Amazon Reviews' `All_Beauty` slice didn't, on a case the
-planner itself flagged as low-confidence. That's consistent with a planner
-whose confidence should probably be reflected in the shortlist somehow
-(e.g. surfacing "no strong signal" cases as closer scores, which it already
-does here — 0.50 vs 0.35 vs 0.35 — the caller just isn't told 0.15 is a
-weak margin) rather than a fixed calibration bug to patch.
+**Net effect:** two real datasets checked at the time, MovieLens matched
+the planner's pick and Amazon Reviews' `All_Beauty` slice didn't, on a case
+the planner itself scored as a thin 0.15-point margin. That thin-margin
+observation is no longer just a note in this file — the reasoning engine
+now surfaces it directly: `Recommendation.low_confidence` flags a rank-1
+pick whose score margin over #2 is under 0.16 (see
+`src/reclab/reasoning_engine/planner.py`), and this exact Amazon Reviews
+case is the real example the threshold is modeled on
+(`tests/reasoning_engine/test_planner.py::test_low_confidence_flagged_on_a_real_thin_margin`).
+It's shown in the UI as a "close call" badge, not just logged here.
+
+## What a second Amazon Reviews category (Gift_Cards) found
+
+`uv run python scripts/run_benchmark.py --amazon-reviews Gift_Cards.csv
+--amazon-metadata meta_Gift_Cards.jsonl` — 377 users, 129 items, 2429
+ratings, 95.0% sparse, 0% cold-start ratio, median sequence length 6.
+`All_Beauty` was the only Amazon Reviews category run before this; a
+second one (per the open item this file itself used to flag) is a real
+additional data point, not a rerun of the same one.
+
+**Same shape as `All_Beauty`, and it makes the low-confidence pattern
+look less like a fluke.** The planner again picked `two_tower` (0.50)
+over `sasrec`/`hybrid_llm` (0.35 each) — flagged `low_confidence` for the
+same reason as `All_Beauty` — and again the measured winner was something
+else: `sasrec` won Recall@10 (0.422 vs `hybrid_llm`'s 0.416 vs
+`two_tower`'s 0.377) and NDCG@10 (0.238 vs 0.164 vs 0.220). That's now
+**two out of two** low-confidence picks on real data that turned out
+wrong. `hybrid_llm` won cold-start recall (0.150 vs `sasrec`'s 0.050 vs
+`two_tower`'s 0.000) even though this dataset's *profiled* cold-start
+ratio is 0% — not a contradiction, just the same definitional gap already
+noted for MovieLens: the profile's `cold_start_ratio` is computed over the
+full pre-split interaction log, while `run_eval`'s cold-item set is
+computed from the *post-split train* data only, where some items
+naturally drop under the 5-interaction threshold once their held-out test
+row is removed. The profile and the eval harness are answering slightly
+different questions about "cold," which is fine, but worth remembering
+when comparing the two numbers.
 
 ## Reproducing this
 
@@ -198,7 +229,8 @@ curl -o /tmp/ml-100k.zip https://files.grouplens.org/datasets/movielens/ml-100k.
 uv run python scripts/run_benchmark.py --movielens-100k /tmp/ml-100k.zip
 ```
 
-For Amazon Reviews 2023 (`All_Beauty` is a good first category — small):
+For Amazon Reviews 2023 (`All_Beauty` and `Gift_Cards` are good first
+categories — small; swap the category name in both URLs for a different one):
 
 ```bash
 curl -L -o /tmp/All_Beauty.csv "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/main/benchmark/5core/rating_only/All_Beauty.csv"

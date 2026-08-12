@@ -213,6 +213,11 @@
   margin: 6px 0 18px;
   max-width: 64ch;
 }
+.compare-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
 
 /* ---------- stat tiles ---------- */
 .stat-grid {
@@ -268,6 +273,17 @@
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.confidence-flag {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--warn);
+  background: var(--warn-soft);
+  border-radius: 5px;
+  padding: 2px 7px;
+  cursor: help;
 }
 .rank-badge {
   font-family: var(--mono);
@@ -347,6 +363,38 @@ details.layer2[open] summary .chev {
 }
 .layer2-score {
   font-family: var(--mono);
+}
+.factors-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.factor-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.factor-effect {
+  flex-shrink: 0;
+  width: 42px;
+  text-align: right;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 700;
+}
+.factor-effect.boost {
+  color: var(--match);
+}
+.factor-effect.penalty {
+  color: var(--warn);
+}
+.factor-effect.neutral {
+  color: var(--text-faint);
+}
+.factor-detail {
+  font-family: var(--sans);
+  line-height: 1.5;
 }
 .layer2-desc {
   margin: 8px 0;
@@ -686,6 +734,90 @@ td.anomaly {
   font-variant-numeric: tabular-nums;
   font-weight: 600;
   text-align: right;
+}
+
+.examples {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+.examples summary {
+  cursor: pointer;
+  list-style: none;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent-strong);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  user-select: none;
+}
+.examples summary::-webkit-details-marker {
+  display: none;
+}
+.examples summary .chev {
+  transition: transform 0.15s ease;
+  font-size: 10px;
+  display: inline-block;
+}
+.examples[open] summary .chev {
+  transform: rotate(90deg);
+}
+.examples-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.example-row {
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--surface-2);
+  border-left: 2px solid var(--border);
+}
+.example-row.hit {
+  border-left-color: var(--match);
+}
+.example-row.miss {
+  border-left-color: var(--text-faint);
+}
+.example-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+.example-user {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+.example-badge {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+.example-badge.hit {
+  background: var(--match-soft);
+  color: var(--match);
+}
+.example-badge.miss {
+  background: var(--surface-3);
+  color: var(--text-faint);
+}
+.example-line {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text);
+  line-height: 1.6;
+  word-break: break-word;
+}
+.example-label {
+  color: var(--text-faint);
+  font-family: var(--sans);
 }
 
 footer.app-footer {

@@ -5,7 +5,7 @@ mechanism that checks whether the reasoning engine's shortlist means anything
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import pandas as pd
@@ -44,6 +44,28 @@ def temporal_train_test_split(
 
 
 @dataclass
+class ExampleRecommendation:
+    """One test user's actual recommendations, held-out item(s), and
+    whether it was a hit — makes "Recall@10 = 0.14" concrete instead of
+    only an aggregate number. See docs/architecture/ui-ux-plan.md section
+    3.4, the "sample of actual recommended items" this fills in."""
+
+    user_id: Any
+    recommended: list[Any]
+    held_out: list[Any]
+    hit: bool
+
+
+# Small and fixed, not sampled: the first N test users in a deterministic
+# (groupby) order, so the same dataset always produces the same examples —
+# reproducibility matters more here than a "representative" sample would,
+# and N is small enough that showing all hits or all misses by bad luck is
+# an acceptable, honestly-reported outcome rather than something to correct
+# for by cherry-picking.
+MAX_EXAMPLE_RECOMMENDATIONS = 5
+
+
+@dataclass
 class EvalResult:
     architecture: str
     k: int
@@ -60,6 +82,7 @@ class EvalResult:
     # surface cold items at all," which is the capability hybrid_llm actually
     # claims over two_tower/sasrec — see benchmarks/README.md.
     cold_start_surfaced_rate: float
+    example_recommendations: list[ExampleRecommendation] = field(default_factory=list)
 
 
 def run_eval(
@@ -93,7 +116,7 @@ def run_eval(
 
     train_item_counts = train[item_col].value_counts()
     cold_items = set(train_item_counts[train_item_counts < cold_start_threshold].index)
-    catalog_size = pd.concat([train[item_col], test[item_col]]).nunique()
+    catalog = set(pd.concat([train[item_col], test[item_col]]))
 
     test_relevant_by_user = test.groupby(user_col)[item_col].apply(set).to_dict()
 
@@ -103,6 +126,7 @@ def run_eval(
     cold_start_hits = 0
     cold_start_relevant_total = 0
     users_with_cold_item_surfaced = 0
+    examples: list[ExampleRecommendation] = []
 
     for user_id, relevant in test_relevant_by_user.items():
         recs = architecture.recommend(user_id, k)
@@ -118,8 +142,18 @@ def run_eval(
             cold_start_hits += len(set(recs[:k]) & cold_relevant)
             cold_start_relevant_total += len(cold_relevant)
 
+        if len(examples) < MAX_EXAMPLE_RECOMMENDATIONS:
+            examples.append(
+                ExampleRecommendation(
+                    user_id=user_id,
+                    recommended=list(recs[:k]),
+                    held_out=sorted(relevant, key=str),
+                    hit=bool(set(recs[:k]) & relevant),
+                )
+            )
+
     n_test_users = len(test_relevant_by_user)
-    coverage = coverage_at_k(all_recommendations, catalog_size, k) if all_recommendations else 0.0
+    coverage = coverage_at_k(all_recommendations, catalog, k) if all_recommendations else 0.0
     cold_start_recall = (
         cold_start_hits / cold_start_relevant_total if cold_start_relevant_total > 0 else None
     )
@@ -135,4 +169,5 @@ def run_eval(
         cold_start_surfaced_rate=users_with_cold_item_surfaced / n_test_users
         if n_test_users
         else 0.0,
+        example_recommendations=examples,
     )

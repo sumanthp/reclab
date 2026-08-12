@@ -14,11 +14,19 @@ export interface DataProfile {
   has_item_image: boolean;
 }
 
+export interface ScoreFactor {
+  detail: string;
+  effect: number;
+}
+
 export interface Recommendation {
   architecture: string;
   rank: number;
   score: number;
   rationale: string;
+  factors: ScoreFactor[];
+  margin_to_next: number | null;
+  low_confidence: boolean;
 }
 
 export interface ProfileResponse {
@@ -35,6 +43,13 @@ export interface ArchitectureInfo {
   relative_serving_latency: "low" | "medium" | "high";
 }
 
+export interface ExampleRecommendation {
+  user_id: string | number;
+  recommended: (string | number)[];
+  held_out: (string | number)[];
+  hit: boolean;
+}
+
 export interface EvalResult {
   architecture: string;
   k: number;
@@ -44,6 +59,7 @@ export interface EvalResult {
   coverage_at_k: number;
   cold_start_recall_at_k: number | null;
   cold_start_surfaced_rate: number;
+  example_recommendations: ExampleRecommendation[];
 }
 
 export interface SkippedEvalResult {

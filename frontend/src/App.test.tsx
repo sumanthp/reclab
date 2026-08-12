@@ -47,8 +47,24 @@ function profile(overrides: Partial<DataProfile> = {}): DataProfile {
 
 function recommendations(): Recommendation[] {
   return [
-    { architecture: "sasrec", rank: 1, score: 0.75, rationale: "boosted: long sequences" },
-    { architecture: "two_tower", rank: 2, score: 0.5, rationale: "solid baseline" },
+    {
+      architecture: "sasrec",
+      rank: 1,
+      score: 0.75,
+      rationale: "boosted: long sequences",
+      factors: [{ detail: "boosted: long sequences", effect: 0.25 }],
+      margin_to_next: 0.25,
+      low_confidence: false,
+    },
+    {
+      architecture: "two_tower",
+      rank: 2,
+      score: 0.5,
+      rationale: "solid baseline",
+      factors: [{ detail: "solid baseline", effect: 0 }],
+      margin_to_next: null,
+      low_confidence: false,
+    },
   ];
 }
 
@@ -66,6 +82,7 @@ function compareResult(overrides: Partial<CompareResult> = {}): CompareResult {
         coverage_at_k: 0.9,
         cold_start_recall_at_k: null,
         cold_start_surfaced_rate: 0,
+        example_recommendations: [],
       },
     },
     comparison: {

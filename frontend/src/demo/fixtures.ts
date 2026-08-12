@@ -1,5 +1,6 @@
 import movielensJson from "./data/movielens.json";
 import amazonJson from "./data/amazon-reviews.json";
+import amazonGiftCardsJson from "./data/amazon-gift-cards.json";
 import syntheticDefaultJson from "./data/synthetic-default.json";
 import syntheticColdStartJson from "./data/synthetic-cold-start-heavy.json";
 import type { ArchitectureInfo, CompareResult, RunResponse, RunSummary } from "../lib/types";
@@ -19,25 +20,31 @@ const FIXTURES: DemoFixture[] = [
   {
     id: "movielens-100k",
     label: "MovieLens 100K (real)",
-    createdAt: "2026-08-12T19:39:42Z",
+    createdAt: "2026-08-12T20:37:42Z",
     result: movielensJson as CompareResult,
   },
   {
     id: "amazon-reviews-all-beauty",
     label: "Amazon Reviews · All_Beauty (real)",
-    createdAt: "2026-08-12T19:40:59Z",
+    createdAt: "2026-08-12T20:36:16Z",
     result: amazonJson as CompareResult,
+  },
+  {
+    id: "amazon-reviews-gift-cards",
+    label: "Amazon Reviews · Gift_Cards (real)",
+    createdAt: "2026-08-12T20:35:43Z",
+    result: amazonGiftCardsJson as CompareResult,
   },
   {
     id: "synthetic-default",
     label: "Synthetic — moderate sparsity",
-    createdAt: "2026-08-12T18:55:43Z",
+    createdAt: "2026-08-12T20:35:13Z",
     result: syntheticDefaultJson as CompareResult,
   },
   {
     id: "synthetic-cold-start-heavy",
     label: "Synthetic — cold-start heavy",
-    createdAt: "2026-08-12T18:55:55Z",
+    createdAt: "2026-08-12T20:35:25Z",
     result: syntheticColdStartJson as CompareResult,
   },
 ];

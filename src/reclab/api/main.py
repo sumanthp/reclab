@@ -167,7 +167,10 @@ async def profile_dataset(
 
     return ProfileResponse(
         profile=profile.__dict__,
-        recommendations=[r.__dict__ for r in recommendations],
+        # asdict, not r.__dict__: Recommendation now nests ScoreFactor
+        # dataclass instances (factors), which .__dict__ would leave as
+        # non-JSON-serializable objects instead of plain dicts.
+        recommendations=[asdict(r) for r in recommendations],
     )
 
 
