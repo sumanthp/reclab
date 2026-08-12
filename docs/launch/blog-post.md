@@ -1,6 +1,6 @@
-# Building reclab: reasoning about recommendation architectures, and finding out my reasoning engine was half right
+# Building reclab: reasoning about recommendation architectures, and checking my own reasoning against real data
 
-*(Draft — rewrite in your own voice before publishing. Placeholders in `<...>`.)*
+*(Draft — rewrite in your own voice before publishing.)*
 
 ## The problem
 
@@ -29,7 +29,8 @@ own data" cut away most of the complexity that mattered for the enterprise
 version — the trust boundary between a vendor and a customer's cloud account
 just doesn't exist when you're both. What was left was the actual
 interesting part: the reasoning engine, and whether its recommendations
-would hold up.
+would hold up. **[Try the live demo](https://sumanthp.github.io/reclab/)** —
+it's the actual UI running against real precomputed results, not a mockup.
 
 ## Phase 0: does the reasoning actually work?
 
@@ -46,10 +47,10 @@ planner that sounds reasonable.
 
 My first plan was to implement the three candidate architectures — a
 two-tower baseline, a SASRec-style sequential transformer, and a hybrid
-encoder + LLM re-ranker — using PyTorch, like everyone does. That didn't
-work: the current PyTorch wheel on PyPI requires CUDA runtime libraries just
-to `import torch`, even for CPU-only use, and the CPU-only wheel index
-wasn't reachable from my environment.
+encoder + re-ranker — using PyTorch, like everyone does. That didn't work:
+the current PyTorch wheel on PyPI requires CUDA runtime libraries just to
+`import torch`, even for CPU-only use, and the CPU-only wheel index wasn't
+reachable from my environment.
 
 Rather than blocking on that, I rewrote all three in plain NumPy. The
 interesting one is the sequential model: implementing causal self-attention
@@ -61,44 +62,62 @@ across every gradient tensor. It passed on the first real attempt, which was
 a genuinely good feeling, but I wouldn't have trusted the model's output
 without that check regardless.
 
-## What the benchmarks actually found
+## What real data actually found
 
-Once all three architectures could really train and recommend, I ran the
-reasoning engine's shortlist against actual measured results on two
-scenarios: a typical dataset, and a sparse, high-cold-start, rich-item-text
-one where the planner should confidently favor the hybrid architecture.
+Synthetic data got the pipeline working, but the real test was whether any
+of this held up on real interactions. I ran it against MovieLens 100K and
+two categories of Amazon Reviews 2023 (`All_Beauty`, `Gift_Cards`).
 
-The honest result: **partial confirmation.** On raw Recall@10, the planner's
-top pick didn't win in either scenario — a well-tuned matrix factorization
-baseline was hard to beat at the scale I tested, which is a known,
-legitimate pattern in recommendation systems, not a sign my other
-implementations were broken. But on cold-start recall specifically, the
-hybrid architecture won exactly when the planner said it should, by a wide
-margin, in both scenarios.
+The honest result: **still mixed, in an interesting way.** On MovieLens, the
+planner's #1 pick (`sasrec`) matched the measured Recall@K/NDCG@K winner —
+a clean hit. On both Amazon Reviews categories, it didn't. But here's the
+part I actually care about: the planner itself flagged both of those picks
+as low-confidence *before* I checked whether they were right — a real
+`margin_to_next` computed from the score gap between its #1 and #2 pick, not
+a post-hoc excuse. Two for two, the low-confidence flag was on the case that
+turned out wrong.
 
-That told me something more useful than either a clean pass or a clean
-failure would have: the reasoning engine's ranking currently conflates "best
-architecture overall" with "best architecture on the dimension it's actually
-reasoning about." A rationale about cold-start performance should be checked
-against cold-start metrics, not an aggregate Recall@K number. That's a real,
-specific next step for the planner's scoring logic — and a much better thing
-to find in Phase 0 than either "it's perfect" or "it's wrong," neither of
-which would have told me what to fix.
+That's not "the reasoning engine works." It's something more useful for a
+tool whose whole premise is that you can trust its explanations: **it knows
+when it doesn't know.** The confidence signal is now a real field in the API
+response and the UI (a "close call" badge, not just a score bar), and the
+underlying ranking-calibration problem — the shortlist still conflates "best
+overall" with "best on the specific dimension its own rationale invokes" —
+is documented as the concrete next step, not smoothed over.
 
-I wrote this up in full in the repo (`benchmarks/README.md`) rather than
-tuning the demo until it looked clean. If the point of this project is
-building something legible and honest, that has to include what doesn't
-work yet.
+Along the way, running real data also surfaced a real bug: `coverage_at_k`
+was computing candidate-recommendation coverage against the wrong
+denominator, letting one architecture score *above* the theoretical maximum
+of 1.0 (1.53, on Amazon Reviews). Fixed, with a regression test that locks
+in the case that caught it. I wrote all of this up in the repo
+(`benchmarks/README.md`) rather than tuning the demo until it looked clean —
+if the point of this project is building something legible and honest, that
+has to include what's wrong, not just what's right.
+
+## From a validated engine to an actual product
+
+Once the reasoning engine had real evidence behind it, the rest became worth
+building for real instead of mocking up: a FastAPI backend with an async job
+queue for training runs, a React frontend that drives the whole upload →
+profile → shortlist → compare → results loop against the live API (with run
+history, cancellation, and per-user hit/miss examples you can inspect), and
+a static demo build on GitHub Pages that reuses the exact same components
+against precomputed real results, so anyone can see it work without running
+anything locally. It's Docker Compose'd, has upload/concurrency limits and
+structured JSON request logging, and a scoped Playwright suite that drives
+the real backend and real frontend together as a final check that the
+pieces actually integrate — on top of the unit-level pytest and Vitest
+suites.
 
 ## What's next
 
-The biggest open item is validating this against real public benchmarks
-(MovieLens, Amazon Reviews) instead of the synthetic dataset generator I
-built for development — my environment couldn't reach the dataset hosts, so
-that's genuinely untested end-to-end. After that: calibrating the reasoning
-engine against the multi-metric finding above, and only then — per the
-original plan — building the dashboard UI, once there's something real
-worth putting a UI in front of.
+The biggest open item is still calibrating the reasoning engine's ranking
+against the multi-metric finding above — two real datasets now point at the
+same gap. After that: running against a denser Amazon Reviews category
+(the two I've run so far are both small), and benchmarking the real
+Anthropic-backed re-ranker I added against the default lexical one to see
+whether real semantic matching earns its cost.
 
-Repo: <github URL>. If you try it against real data and it breaks (or
-works), I'd like to know either way.
+Repo: <https://github.com/sumanthp/reclab>. Live demo:
+<https://sumanthp.github.io/reclab/>. If you try it against your own data
+and it breaks (or works), I'd like to know either way.
