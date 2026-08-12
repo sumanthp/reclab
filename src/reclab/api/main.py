@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import io
 import os
+import threading
 from dataclasses import asdict
 
 import pandas as pd
@@ -40,6 +41,23 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Every upload is read fully into memory (pd.read_csv(io.BytesIO(...))) —
+# fine for the CSVs this tool is meant for (MovieLens's u.data is ~2MB, a
+# typical interactions export is smaller still), but nothing bounded how
+# large an upload could be before this. Read in chunks so a runaway-large
+# file is rejected during the read itself, not after it's already fully
+# buffered.
+MAX_UPLOAD_BYTES = int(os.environ.get("RECLAB_MAX_UPLOAD_MB", "100")) * 1024 * 1024
+_UPLOAD_CHUNK_BYTES = 1024 * 1024
+
+# BackgroundTasks has no concurrency control of its own — every /compare
+# call spawns a thread that trains three architectures, with nothing
+# capping how many can pile up at once. Bounded with a semaphore rather
+# than rejecting over-capacity requests outright: a queued job just stays
+# "pending" (already a meaningful, displayed status) until a slot frees.
+MAX_CONCURRENT_JOBS = int(os.environ.get("RECLAB_MAX_CONCURRENT_JOBS", "2"))
+_job_slots = threading.Semaphore(MAX_CONCURRENT_JOBS)
 
 
 class ProfileResponse(BaseModel):
@@ -85,9 +103,20 @@ def list_architectures() -> list[dict]:
 
 
 async def _read_csv(upload: UploadFile, label: str) -> pd.DataFrame:
-    raw = await upload.read()
+    chunks: list[bytes] = []
+    total = 0
+    while chunk := await upload.read(_UPLOAD_CHUNK_BYTES):
+        total += len(chunk)
+        if total > MAX_UPLOAD_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"{label} exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)}MB upload limit "
+                "(set RECLAB_MAX_UPLOAD_MB to change it)",
+            )
+        chunks.append(chunk)
+
     try:
-        return pd.read_csv(io.BytesIO(raw))
+        return pd.read_csv(io.BytesIO(b"".join(chunks)))
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=400, detail=f"could not parse {label}: {exc}") from exc
 
@@ -162,9 +191,29 @@ def _run_compare_job(
     restructuring every architecture's fit() to check a flag between
     epochs), but the job checks for a cancellation request before starting
     each architecture and stops there, persisting whatever finished so far.
+
+    Also bounded by `_job_slots` (MAX_CONCURRENT_JOBS): if already at
+    capacity, this blocks on the `with` below — the job just stays
+    "pending" until a slot frees, same as any other queued-but-not-started
+    job.
     """
     if (current := jobs.get_job(job_id)) is not None and current.status == "cancelled":
         return  # cancelled before this background task even started running
+
+    with _job_slots:
+        if (current := jobs.get_job(job_id)) is not None and current.status == "cancelled":
+            return  # cancelled while queued, waiting for a slot
+        _run_compare_job_inner(job_id, interactions, item_metadata, user_col, item_col, k)
+
+
+def _run_compare_job_inner(
+    job_id: str,
+    interactions: pd.DataFrame,
+    item_metadata: pd.DataFrame | None,
+    user_col: str,
+    item_col: str,
+    k: int,
+) -> None:
     jobs.mark_running(job_id)
     try:
         profile = profile_interactions(

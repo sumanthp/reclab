@@ -21,13 +21,30 @@ services:
       - RECLAB_STORAGE=sqlite:///./data/reclab.db
     volumes:
       - ./data:/app/data
+    healthcheck:
+      # No curl in the slim base image (see Dockerfile) — urllib is stdlib.
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)",
+        ]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   web:
     build: ./frontend
     ports:
       - "5173:80"
     depends_on:
-      - api
+      # Without this, nginx can start proxying to `api` before it's ready
+      # on a cold `docker compose up`, and the first requests 502 until the
+      # API catches up.
+      api:
+        condition: service_healthy
 
   # Optional, for a shared/multi-user deployment. Not required for local use.
   # postgres:

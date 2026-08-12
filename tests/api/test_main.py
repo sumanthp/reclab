@@ -41,6 +41,18 @@ def test_list_architectures(client):
     assert names == {"two_tower", "sasrec", "hybrid_llm"}
 
 
+def test_upload_over_size_limit_is_rejected(client, monkeypatch):
+    import reclab.api.main as main_module
+
+    monkeypatch.setattr(main_module, "MAX_UPLOAD_BYTES", 10)  # tiny, to avoid a slow real upload
+    csv = b"user_id,item_id\nu1,i1\nu2,i2\nu3,i3\n"  # well over 10 bytes
+    resp = client.post(
+        "/profile", files={"interactions_csv": ("big.csv", io.BytesIO(csv), "text/csv")}
+    )
+    assert resp.status_code == 413
+    assert "upload limit" in resp.json()["detail"]
+
+
 def test_profile_rejects_missing_columns(client):
     csv = b"a,b\n1,2\n"
     resp = client.post(
@@ -252,10 +264,12 @@ def test_compare_job_stops_between_architectures_when_cancelled(monkeypatch):
 
     def fake_get_job(jid):
         calls["n"] += 1
-        # Let the top-of-function check and the first in-loop check see the
-        # real (not-yet-cancelled) state so one architecture actually
-        # trains, then report "cancelled" from then on.
-        if calls["n"] > 2:
+        # Three real checks happen before any architecture trains: the
+        # top-of-function check, the post-semaphore-acquire "still not
+        # cancelled while queued" check, and the first in-loop check. Let
+        # all three see the real (not-yet-cancelled) state so one
+        # architecture actually trains, then report "cancelled" from then on.
+        if calls["n"] > 3:
             return jobs_module.Job(
                 id=jid,
                 status="cancelled",
@@ -276,3 +290,52 @@ def test_compare_job_stops_between_architectures_when_cancelled(monkeypatch):
     assert final.result is not None
     assert 0 < len(final.result["eval_results"]) < 3
     assert final.result["comparison"] is None
+
+
+def test_concurrency_cap_serializes_jobs_at_capacity_one(monkeypatch):
+    import threading
+    import time
+
+    import reclab.api.main as main_module
+    from reclab.api import jobs as jobs_module
+
+    monkeypatch.setattr(main_module, "_job_slots", threading.Semaphore(1))
+
+    order: list[tuple[str, str]] = []
+    order_lock = threading.Lock()
+
+    def fake_inner(job_id, interactions, item_metadata, user_col, item_col, k):
+        with order_lock:
+            order.append(("start", job_id))
+        time.sleep(0.05)
+        with order_lock:
+            order.append(("end", job_id))
+        jobs_module.mark_done(
+            job_id,
+            {
+                "profile": {},
+                "reasoning_engine_shortlist": [],
+                "eval_results": {},
+                "comparison": None,
+            },
+        )
+
+    monkeypatch.setattr(main_module, "_run_compare_job_inner", fake_inner)
+
+    job_a = jobs_module.create_job(dataset_label="a")
+    job_b = jobs_module.create_job(dataset_label="b")
+
+    t1 = threading.Thread(
+        target=main_module._run_compare_job, args=(job_a, None, None, "user_id", "item_id", 10)
+    )
+    t2 = threading.Thread(
+        target=main_module._run_compare_job, args=(job_b, None, None, "user_id", "item_id", 10)
+    )
+    t1.start()
+    time.sleep(0.01)  # let job_a claim the only slot before job_b tries
+    t2.start()
+    t1.join()
+    t2.join()
+
+    # Capacity 1: job_b must not start until job_a has finished.
+    assert order == [("start", job_a), ("end", job_a), ("start", job_b), ("end", job_b)]

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 
 // Proxies API calls to the FastAPI backend during `npm run dev` so the
@@ -16,5 +16,10 @@ export default defineConfig({
       '/compare': 'http://localhost:8000',
       '/runs': 'http://localhost:8000',
     },
+  },
+  test: {
+    environment: 'jsdom',
+    setupFiles: ['./src/test/setup.ts'],
+    css: false,
   },
 })

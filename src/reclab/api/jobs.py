@@ -28,6 +28,12 @@ JobStatus = Literal["pending", "running", "done", "error", "cancelled"]
 
 _lock = threading.Lock()
 
+# Nothing ever pruned the runs table before this — every /compare call
+# grows it forever. Pruned lazily (on create_job, not on a schedule/cron —
+# no scheduler needed for a single-process local tool) down to the most
+# recent N runs, oldest first.
+MAX_RETAINED_RUNS = int(os.environ.get("RECLAB_MAX_RETAINED_RUNS", "200"))
+
 
 def _db_path() -> Path:
     storage = os.environ.get("RECLAB_STORAGE", "sqlite:///./reclab.db")
@@ -81,6 +87,11 @@ def create_job(dataset_label: str | None = None) -> str:
             "INSERT INTO runs (id, status, dataset_label, created_at, updated_at) "
             "VALUES (?, 'pending', ?, ?, ?)",
             (job_id, dataset_label, now, now),
+        )
+        conn.execute(
+            "DELETE FROM runs WHERE id NOT IN "
+            "(SELECT id FROM runs ORDER BY created_at DESC LIMIT ?)",
+            (MAX_RETAINED_RUNS,),
         )
     return job_id
 

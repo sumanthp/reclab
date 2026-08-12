@@ -27,13 +27,12 @@ What's real today:
 - A FastAPI service (`src/reclab/api/`) exposing profiling, reasoning, and a full async train+eval comparison job (`/profile`, `/compare`, `/runs`, `/runs/{id}`, `/runs/{id}/cancel`, `/architectures`) over HTTP.
 - **A working end-to-end web UI** (`frontend/`, React + TypeScript) — upload a CSV, see the profile and shortlist (with each architecture's strengths/weaknesses/cost profile from `/architectures`), kick off the full architecture comparison, cancel a run mid-flight, and browse past runs — all against the live API, not a mockup. Not the full dual-audience dashboard from the design doc (`docs/architecture/ui-ux-plan.md`) yet — the shortlist's rationale is still prose, not structured (see the plan's open question).
 - `scripts/run_benchmark.py` and `scripts/demo.sh` — the actual train-and-evaluate pipeline, runnable in under a minute, no GPU or API keys required.
+- Operational basics for running this beyond a single quick local try: upload size limits, a concurrency cap on training jobs (extra requests queue instead of piling up threads), job-store retention pruning, and a `docker-compose` health-check gate — see [Configuration](#configuration) below. A frontend test suite (32 Vitest + React Testing Library tests) now sits alongside the backend's 86 pytest tests, both run in CI.
 
 What's not done yet (see [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 - **Calibrating the reasoning engine's ranking logic** against the multi-metric finding above — both real-dataset runs now point at the same underlying gap (shortlist conflates "best overall" with "best on the dimension its own rationale invokes").
 - **A `coverage_at_k` definition fix** for architectures (like `hybrid_llm`) whose candidate pool isn't limited to the train/test interaction catalog — see the Amazon Reviews findings in `benchmarks/README.md`.
 - The rest of the dual-audience dashboard from `docs/architecture/ui-ux-plan.md` — a structured (not parsed-prose) rationale breakdown, and a sample of actual recommended items per test user.
-- Operational hardening the UI's newfound realism exposed: no upload size limit, no cap on concurrent `/compare` jobs, and no cleanup for the SQLite `runs` table (grows forever).
-- No frontend test suite (unit or E2E) — the backend has 83 pytest tests; the frontend has none yet.
 
 ## Candidate architectures
 
@@ -108,6 +107,18 @@ cd frontend && npm install && npm run dev     # terminal 2, http://localhost:517
 ```
 
 Vite's dev server proxies API calls to `localhost:8000` (see `frontend/vite.config.ts`) — no CORS setup needed.
+
+### Configuration
+
+All optional, all environment variables read by the API (`src/reclab/api/main.py`, `src/reclab/api/jobs.py`) — none need to be set for local/single-user use, the defaults are sized for that case:
+
+| Variable | Default | What it controls |
+|---|---|---|
+| `RECLAB_STORAGE` | `sqlite:///./reclab.db` | Where job state (`/compare` run history) persists. |
+| `RECLAB_CORS_ORIGINS` | `*` | Comma-separated allowed origins. Permissive by default since this is a self-hosted single-user tool with no auth; lock it down for anything more exposed. |
+| `RECLAB_MAX_UPLOAD_MB` | `100` | Per-file upload size limit for `/profile` and `/compare`. |
+| `RECLAB_MAX_CONCURRENT_JOBS` | `2` | How many `/compare` training jobs can run at once; extra requests queue (status `pending`) rather than piling up unbounded background threads. |
+| `RECLAB_MAX_RETAINED_RUNS` | `200` | Oldest runs beyond this count are pruned whenever a new one starts, so the job store doesn't grow forever. |
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add a new architecture or extend the reasoning engine, and [`benchmarks/README.md`](benchmarks/README.md) for what the benchmark runs actually found.
 

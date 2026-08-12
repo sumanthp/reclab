@@ -61,5 +61,8 @@ jobs:
       - name: Lint (oxlint)
         run: npm run lint
 
+      - name: Run tests
+        run: npm test
+
       - name: Type-check + build
         run: npm run build

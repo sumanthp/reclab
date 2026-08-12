@@ -74,3 +74,13 @@ def test_list_jobs_respects_limit():
         jobs.create_job(dataset_label=f"{i}.csv")
 
     assert len(jobs.list_jobs(limit=2)) == 2
+
+
+def test_create_job_prunes_beyond_retention_limit(monkeypatch):
+    monkeypatch.setattr(jobs, "MAX_RETAINED_RUNS", 3)
+
+    ids = [jobs.create_job(dataset_label=f"{i}.csv") for i in range(5)]
+
+    remaining = {j.id for j in jobs.list_jobs(limit=100)}
+    assert remaining == set(ids[-3:])  # oldest 2 pruned, newest 3 kept
+    assert jobs.get_job(ids[0]) is None
