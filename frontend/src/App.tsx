@@ -6,6 +6,7 @@ import { ShortlistCards } from "./components/ShortlistCards";
 import { CompareResults } from "./components/CompareResults";
 import { RunHistory } from "./components/RunHistory";
 import { DemoBanner } from "./components/DemoBanner";
+import { AboutSection } from "./components/AboutSection";
 import { DemoPicker } from "./components/DemoPicker";
 import {
   cancelRun,
@@ -238,6 +239,7 @@ function App() {
       </div>
 
       {DEMO_MODE && <DemoBanner />}
+      {DEMO_MODE && view === "upload" && <AboutSection />}
 
       <RunHistory runs={history} onSelect={handleViewRun} activeRunId={run?.id} />
 
