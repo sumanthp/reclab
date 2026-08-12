@@ -62,7 +62,7 @@ uv run mypy src
 4. **A fourth architecture** (a GNN-based approach is the natural next
    candidate — see the MVP plan's out-of-scope-for-v0.1 list). Same interface,
    same registration process as the three that exist.
-4. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
+5. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
    interface in `src/reclab/architectures/rerankers.py` against an actual LLM
    API, as an alternative to the default TF-IDF lexical one.
 
