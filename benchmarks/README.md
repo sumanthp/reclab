@@ -21,13 +21,14 @@ the answer is "not yet."
 
 ## Datasets
 
-**MovieLens 100K has now been run end-to-end** (`results/movielens-100k-*.json`)
-— see findings below. `load_movielens_100k` parsed the real `u.data`/`u.item`
-files with no changes needed. **Amazon Reviews is still not run** —
-`load_amazon_reviews_category` remains a stub (see CONTRIBUTING.md); that's
-now the highest-value open item.
+**Both public benchmarks have now been run end-to-end.** MovieLens 100K
+(`results/movielens-100k-*.json`) and a category slice of Amazon Reviews 2023
+(`results/amazon-reviews-*.json`) — see findings below for both.
+`load_movielens_100k` parsed the real files with no changes needed;
+`load_amazon_reviews_category` needed one real fix (see below) once run
+against the actual dataset.
 
-In the meantime, `reclab.datasets.synthetic` generates a reproducible dataset
+`reclab.datasets.synthetic` remains useful alongside them: it generates a reproducible dataset
 with controllable sparsity, cold-start ratio, sequence length, and item-text
 structure. Two scenarios are checked in:
 
@@ -115,6 +116,63 @@ the planner and Recall@10 agreed on it. The concrete next step is unchanged:
 score each architecture against the specific metric its rationale invokes,
 rather than implicitly ranking by Recall@K alone.
 
+## What the real Amazon Reviews 2023 run found
+
+`uv run python scripts/run_benchmark.py --amazon-reviews All_Beauty.csv
+--amazon-metadata meta_All_Beauty.jsonl` — the `All_Beauty` category's
+`benchmark/5core/rating_only` slice (253 users, 356 items, 2535 ratings,
+97.2% sparse, 0% cold-start ratio by the profiler's definition, median
+sequence length 7) plus the real per-product metadata file for titles.
+
+**A real parsing bug was caught and fixed before this result was usable.**
+`load_amazon_reviews_category`'s first pass built `item_metadata` by
+renaming the metadata file's `title` column to `description` and selecting
+`["item_id", "description"]` — but the raw `meta_<Category>.jsonl` records
+already have their own `description` field (a list of bullet points),
+so the rename produced *two* columns both named `description`, and
+`item_metadata["description"]` downstream silently returned a DataFrame
+instead of a Series, crashing `hybrid_llm.fit()` with `'DataFrame' object
+has no attribute 'tolist'`. Fixed by constructing `item_metadata` from named
+Series directly instead of rename+select (`src/reclab/datasets/loaders.py`).
+This is exactly the kind of thing the loaders' unit fixtures didn't catch,
+because the fixtures were hand-written and never had a field name collision
+— real-file validation is what caught it.
+
+**On this dataset, the planner's #1 pick did not match the measured winner.**
+The planner picked `two_tower` (score 0.50, "solid general-purpose
+baseline" — the median sequence length of 7 wasn't enough to boost `sasrec`,
+and cold-start ratio of 0 gave no signal for `hybrid_llm`). The measured
+Recall@10 winner was `hybrid_llm` (0.091 vs `sasrec`'s 0.079 vs
+`two_tower`'s 0.047), and NDCG@10 agreed (0.040 vs 0.033 vs 0.023). This is
+a second real mismatch, alongside the synthetic-data ones, on a dataset
+where the planner's own rationale gave no strong reason to prefer any one
+architecture (`hybrid_llm`'s rationale here was literally "no strong signal
+either way" — the planner effectively guessed with 356 items, and the guess
+was wrong).
+
+**A metric-definition edge case also surfaced:** `hybrid_llm`'s
+`coverage_at_k` came out to 1.528 — above 1.0, which shouldn't be possible
+for a fraction. Traced to `hybrid_llm`'s re-ranker drawing candidates from
+the full item metadata catalog (112,590 products in `All_Beauty`), not just
+the 356 items with interactions, so it can recommend items outside the
+train/test catalog that `coverage_at_k`'s denominator (`catalog_size`,
+computed from train+test only) doesn't count. This is arguably correct
+behavior for `hybrid_llm` specifically — recommending truly cold items with
+zero interaction history is the entire point of a content-based re-ranker —
+but it means `coverage_at_k` as currently defined isn't a fair comparison
+across architectures with different candidate universes. Left as-is and
+flagged here rather than silently patched, since narrowing `hybrid_llm`'s
+candidates to the interaction catalog would remove the exact behavior being
+evaluated; this needs a real design decision, not a guess.
+
+**Net effect:** two real datasets now checked. MovieLens matched the
+planner's pick; Amazon Reviews' `All_Beauty` slice didn't, on a case the
+planner itself flagged as low-confidence. That's consistent with a planner
+whose confidence should probably be reflected in the shortlist somehow
+(e.g. surfacing "no strong signal" cases as closer scores, which it already
+does here — 0.50 vs 0.35 vs 0.35 — the caller just isn't told 0.15 is a
+weak margin) rather than a fixed calibration bug to patch.
+
 ## Reproducing this
 
 ```bash
@@ -139,6 +197,18 @@ For MovieLens 100K (network access needed once, to download it):
 curl -o /tmp/ml-100k.zip https://files.grouplens.org/datasets/movielens/ml-100k.zip
 uv run python scripts/run_benchmark.py --movielens-100k /tmp/ml-100k.zip
 ```
+
+For Amazon Reviews 2023 (`All_Beauty` is a good first category — small):
+
+```bash
+curl -L -o /tmp/All_Beauty.csv "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/main/benchmark/5core/rating_only/All_Beauty.csv"
+curl -L -o /tmp/meta_All_Beauty.jsonl "https://huggingface.co/datasets/McAuley-Lab/Amazon-Reviews-2023/resolve/main/raw/meta_categories/meta_All_Beauty.jsonl"
+uv run python scripts/run_benchmark.py --amazon-reviews /tmp/All_Beauty.csv --amazon-metadata /tmp/meta_All_Beauty.jsonl
+```
+
+(The metadata file is ~200MB — the ratings-only CSV alone is enough to get a
+shortlist and Recall@K numbers, just without `hybrid_llm`'s real item-text
+signal.)
 
 ## The bar
 

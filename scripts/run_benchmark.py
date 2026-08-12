@@ -12,6 +12,8 @@ Usage:
     uv run python scripts/run_benchmark.py --dataset synthetic --cold-start-heavy
     uv run python scripts/run_benchmark.py --csv path/to/interactions.csv
     uv run python scripts/run_benchmark.py --movielens-100k path/to/ml-100k(.zip)
+    uv run python scripts/run_benchmark.py --amazon-reviews path/to/reviews.csv \
+        [--amazon-metadata path/to/meta.jsonl]
 
 Dataset options:
   --dataset synthetic          A reproducible synthetic dataset (see
@@ -27,6 +29,12 @@ Dataset options:
                                 architectures needing item text unless you
                                 also pass --item-metadata-csv).
   --movielens-100k PATH        Real MovieLens 100K, as a directory or .zip.
+  --amazon-reviews PATH        Real Amazon Reviews 2023, one category — a
+                                benchmark/5core/rating_only/<Category>.csv or
+                                a raw/review_categories/<Category>.jsonl(.gz)
+                                from https://huggingface.co/datasets/
+                                McAuley-Lab/Amazon-Reviews-2023. Pass
+                                --amazon-metadata for real product titles.
 """
 
 from __future__ import annotations
@@ -35,7 +43,7 @@ import argparse
 import json
 import sys
 from dataclasses import asdict
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
@@ -45,7 +53,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from reclab.architectures import REGISTRY  # noqa: E402
 from reclab.data_profiler import profile_interactions  # noqa: E402
 from reclab.datasets import SyntheticConfig, generate_synthetic_dataset  # noqa: E402
-from reclab.datasets.loaders import load_movielens_100k  # noqa: E402
+from reclab.datasets.loaders import (  # noqa: E402
+    load_amazon_reviews_category,
+    load_movielens_100k,
+)
 from reclab.eval import run_eval, temporal_train_test_split  # noqa: E402
 from reclab.reasoning_engine import recommend_architectures  # noqa: E402
 
@@ -64,7 +75,13 @@ def main() -> None:
     source.add_argument("--dataset", choices=["synthetic"], help="built-in dataset generator")
     source.add_argument("--csv", help="path to a local interactions CSV")
     source.add_argument("--movielens-100k", help="path to ml-100k directory or .zip")
+    source.add_argument(
+        "--amazon-reviews", help="path to an Amazon Reviews 2023 category CSV/JSONL(.gz)"
+    )
 
+    parser.add_argument(
+        "--amazon-metadata", help="(--amazon-reviews only) path to the meta_<Category>.jsonl(.gz)"
+    )
     parser.add_argument(
         "--cold-start-heavy",
         action="store_true",
@@ -92,6 +109,11 @@ def main() -> None:
     elif args.movielens_100k:
         interactions, item_metadata = load_movielens_100k(args.movielens_100k)
         dataset_label = "movielens-100k"
+    elif args.amazon_reviews:
+        interactions, item_metadata = load_amazon_reviews_category(
+            args.amazon_reviews, args.amazon_metadata
+        )
+        dataset_label = f"amazon-reviews-{Path(args.amazon_reviews).stem}"
     else:
         interactions, _ = load_csv(args.csv, args.user_col, args.item_col)
         if args.item_metadata_csv:
@@ -186,7 +208,7 @@ def main() -> None:
         )
 
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    result_path = RESULTS_DIR / f"{dataset_label}-{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}.json"
+    result_path = RESULTS_DIR / f"{dataset_label}-{datetime.now(UTC):%Y%m%dT%H%M%SZ}.json"
     result_path.write_text(
         json.dumps(
             {

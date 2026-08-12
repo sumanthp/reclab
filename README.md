@@ -12,22 +12,22 @@ Self-hosted by design: `docker compose up` locally, or deploy the same container
 2. **Reason** — a planner maps that profile to a ranked shortlist of candidate architectures, with a plain-language rationale for each — not just a score.
 3. **Compare** — evaluate candidates side by side on your actual data: Recall@K, NDCG@K, coverage, cold-start slice performance.
 
-## Status: Phase 0/1 — reasoning engine validated on real and synthetic data, with an honest gap found
+## Status: Phase 0/1 — reasoning engine validated on two real datasets and synthetic data, with an honest gap found
 
-Phase 0 asked: **does the reasoning engine's shortlist actually track which architecture wins, or is it just a plausible-sounding heuristic?** The answer, after training and evaluating all three architectures on both real (MovieLens 100K) and synthetic data: partially, and the gap is documented rather than hidden. See [`benchmarks/README.md`](benchmarks/README.md) for the full writeup — short version: on real MovieLens 100K data, the planner's #1 pick (`sasrec`) matched the measured overall winner on Recall@K and NDCG@K. On the synthetic scenarios, the planner correctly identifies *which architecture is best on the specific dimension its rationale invokes* (e.g. `hybrid_llm` does win on cold-start recall exactly when the planner says it should), but its shortlist *ranking* currently conflates that with "best overall," which a single Recall@K comparison doesn't validate. That's a concrete, non-cosmetic next step for the planner, not a passing grade.
+Phase 0 asked: **does the reasoning engine's shortlist actually track which architecture wins, or is it just a plausible-sounding heuristic?** The answer, after training and evaluating all three architectures on real MovieLens 100K data, a real Amazon Reviews 2023 category, and synthetic data: it's mixed, and that's reported rather than hidden. See [`benchmarks/README.md`](benchmarks/README.md) for the full writeup — short version: on MovieLens, the planner's #1 pick (`sasrec`) matched the measured overall winner on Recall@K and NDCG@K. On Amazon Reviews' `All_Beauty` category, it didn't — the planner itself flagged that case as low-confidence ("no strong signal either way"), and the guess was wrong. On the synthetic scenarios, the planner correctly identifies *which architecture is best on the specific dimension its rationale invokes* (e.g. `hybrid_llm` does win on cold-start recall exactly when the planner says it should), but its shortlist *ranking* currently conflates that with "best overall," which a single Recall@K comparison doesn't validate. That's a concrete, non-cosmetic next step for the planner, not a passing grade.
 
 What's real today:
 - Data profiling (`src/reclab/data_profiler/`) — computes the signals the planner reasons over.
 - The reasoning engine (`src/reclab/reasoning_engine/`) — a heuristic planner scoring three candidate architectures against a data profile.
 - **All three architectures actually train and recommend** (`src/reclab/architectures/`) — real NumPy implementations (BPR matrix factorization, a hand-derived self-attention sequential model with backprop checked against numerical gradients, and a hybrid encoder + pluggable re-ranker), not stubs. No PyTorch dependency — see the architectures' module docstrings and `pyproject.toml` for why.
 - A full eval harness (`src/reclab/eval/`) — temporal train/test splitting, Recall@K, NDCG@K, coverage, and two cold-start metrics.
-- A synthetic dataset generator (`src/reclab/datasets/synthetic.py`) with controllable sparsity, cold-start ratio, and item-text structure, plus a real MovieLens 100K loader (`src/reclab/datasets/loaders.py`) — both exercised end-to-end (see [`benchmarks/README.md`](benchmarks/README.md)).
+- A synthetic dataset generator (`src/reclab/datasets/synthetic.py`) with controllable sparsity, cold-start ratio, and item-text structure, plus real loaders for MovieLens 100K and Amazon Reviews 2023 (`src/reclab/datasets/loaders.py`) — all exercised end-to-end against real downloads (see [`benchmarks/README.md`](benchmarks/README.md)).
 - A FastAPI service (`src/reclab/api/`) exposing profiling + reasoning over HTTP.
 - `scripts/run_benchmark.py` and `scripts/demo.sh` — the actual train-and-evaluate pipeline, runnable in under a minute, no GPU or API keys required.
 
 What's not done yet (see [`CONTRIBUTING.md`](CONTRIBUTING.md)):
-- **Validation against Amazon Reviews.** MovieLens 100K is now run end-to-end (see above); the Amazon Reviews loader (`load_amazon_reviews_category`) is still a stub pending a real download to nail down field names — now the highest-value open item.
-- Calibrating the reasoning engine's ranking logic against the multi-metric finding above.
+- **Calibrating the reasoning engine's ranking logic** against the multi-metric finding above — both real-dataset runs now point at the same underlying gap (shortlist conflates "best overall" with "best on the dimension its own rationale invokes").
+- **A `coverage_at_k` definition fix** for architectures (like `hybrid_llm`) whose candidate pool isn't limited to the train/test interaction catalog — see the Amazon Reviews findings in `benchmarks/README.md`.
 - Any UI. The dashboard/sandbox described in the plan doc is intentionally sequenced *after* this validation work, not before.
 
 ## Candidate architectures

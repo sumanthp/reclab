@@ -35,22 +35,31 @@ uv run mypy src
 
 ## What's most useful to contribute right now
 
-1. **Running this against Amazon Reviews.** MovieLens 100K is now run
-   end-to-end against the real dataset (see `benchmarks/README.md`) — the
-   loader worked unmodified. `load_amazon_reviews_category`
-   (`src/reclab/datasets/loaders.py`) is still a stub; implementing it
-   against a real category download (2023 release, e.g. `Video_Games`) and
-   reporting field-name/schema mismatches is the single most valuable
-   contribution possible right now. See `benchmarks/README.md`.
-2. **Calibrating the reasoning engine.** `benchmarks/README.md` documents a
-   real finding: the planner's shortlist ranking conflates "best overall"
-   with "best on the dimension it's reasoning about" (e.g. `hybrid_llm`
-   correctly wins on cold-start recall but the planner's ranking implies it
-   should win on Recall@K overall, which it doesn't at this scale). Scoring
+1. **Calibrating the reasoning engine.** `benchmarks/README.md` documents a
+   finding confirmed on two real datasets now: the planner's shortlist
+   ranking conflates "best overall" with "best on the dimension it's
+   reasoning about" (e.g. `hybrid_llm` correctly wins on cold-start recall
+   but the planner's ranking implies it should win on Recall@K overall,
+   which it doesn't at this scale, and on Amazon Reviews' `All_Beauty`
+   category the planner's own "no strong signal" pick was wrong). Scoring
    architectures against the metric each rationale actually invokes, instead
    of one blended ranking, is the concrete next step — see
    `src/reclab/reasoning_engine/planner.py`.
-3. **A fourth architecture** (a GNN-based approach is the natural next
+2. **Fixing `coverage_at_k` for architectures with an unrestricted candidate
+   pool.** On Amazon Reviews, `hybrid_llm` scored `coverage_at_k=1.53` —
+   above the theoretical max of 1.0 — because it draws candidates from the
+   full item metadata catalog (112K products), not just the train/test
+   interaction catalog `coverage_at_k`'s denominator uses. See the "metric
+   definition edge case" note in `benchmarks/README.md` before picking a
+   fix — narrowing `hybrid_llm`'s candidates would remove the cold-item
+   behavior the metric is supposed to reward, so this needs a real decision,
+   not a quick patch.
+3. **Running this against more Amazon Reviews categories.** Only
+   `All_Beauty` (small, 356 items) has been run — a denser or
+   higher-cold-start category (`Video_Games`, `Musical_Instruments`) would
+   be a useful additional data point for the calibration work above. See
+   `benchmarks/README.md` for the download commands.
+4. **A fourth architecture** (a GNN-based approach is the natural next
    candidate — see the MVP plan's out-of-scope-for-v0.1 list). Same interface,
    same registration process as the three that exist.
 4. **A real LLM re-ranker** for `hybrid_llm`, implementing the `Reranker`
