@@ -5,6 +5,8 @@ import { ProfileStats } from "./components/ProfileStats";
 import { ShortlistCards } from "./components/ShortlistCards";
 import { CompareResults } from "./components/CompareResults";
 import { RunHistory } from "./components/RunHistory";
+import { DemoBanner } from "./components/DemoBanner";
+import { DemoPicker } from "./components/DemoPicker";
 import {
   cancelRun,
   fetchArchitectures,
@@ -13,6 +15,7 @@ import {
   profileDataset,
   startCompare,
 } from "./lib/api";
+import { DEMO_ARCHITECTURES, demoFixtureList, demoRun, demoRunSummaries } from "./demo/fixtures";
 import {
   ApiError,
   type ArchitectureInfo,
@@ -20,6 +23,11 @@ import {
   type RunResponse,
   type RunSummary,
 } from "./lib/types";
+
+// Set at build time (see vite.config.ts / .github/workflows/pages.yml) — the
+// GitHub Pages build has no backend to talk to, so it ships pre-computed
+// real results instead of calling the network functions above at all.
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === "true";
 
 const POLL_INTERVAL_MS = 1500;
 const TERMINAL_STATUSES = new Set(["done", "error"]);
@@ -49,6 +57,11 @@ function App() {
   const pollHandle = useRef<number | null>(null);
 
   useEffect(() => {
+    if (DEMO_MODE) {
+      setArchitectureInfo(Object.fromEntries(DEMO_ARCHITECTURES.map((a) => [a.name, a])));
+      setHistory(demoRunSummaries());
+      return;
+    }
     fetchArchitectures()
       .then((list) => {
         setArchitectureInfo(Object.fromEntries(list.map((a) => [a.name, a])));
@@ -158,7 +171,25 @@ function App() {
     }
   }
 
+  function handleLoadDemo(id: string) {
+    const found = demoRun(id);
+    if (!found?.result) return;
+    setDataset(null);
+    setProfileError(null);
+    setCompareStartError(null);
+    setProfileResp({
+      profile: found.result.profile,
+      recommendations: found.result.reasoning_engine_shortlist,
+    });
+    setRun(found);
+    setView("results");
+  }
+
   async function handleViewRun(jobId: string) {
+    if (DEMO_MODE) {
+      handleLoadDemo(jobId);
+      return;
+    }
     setDataset(null); // no local files for a historical run — Compare CTA stays hidden
     setProfileError(null);
     setCompareStartError(null);
@@ -200,17 +231,22 @@ function App() {
         {view === "results" && (
           <div className="header-actions">
             <button className="btn btn-ghost" onClick={handleReset}>
-              Analyze new dataset
+              {DEMO_MODE ? "Try another dataset" : "Analyze new dataset"}
             </button>
           </div>
         )}
       </div>
 
+      {DEMO_MODE && <DemoBanner />}
+
       <RunHistory runs={history} onSelect={handleViewRun} activeRunId={run?.id} />
 
-      {view === "upload" && (
-        <UploadForm onAnalyze={handleAnalyze} loading={profileLoading} error={profileError} />
-      )}
+      {view === "upload" &&
+        (DEMO_MODE ? (
+          <DemoPicker fixtures={demoFixtureList()} onSelect={handleLoadDemo} />
+        ) : (
+          <UploadForm onAnalyze={handleAnalyze} loading={profileLoading} error={profileError} />
+        ))}
 
       {view === "results" && (
         <>

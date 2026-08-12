@@ -6,6 +6,8 @@ Most rec-sys tooling makes you choose upfront: a managed black box (Amazon Perso
 
 Self-hosted by design: `docker compose up` locally, or deploy the same containers on any cloud. Your data never leaves your machine.
 
+**[Live demo](https://sumanthp.github.io/reclab/)** — browse the actual profile/shortlist/comparison UI against real MovieLens 100K, Amazon Reviews, and synthetic results (the exact output of `scripts/run_benchmark.py`, not mocked-up numbers). It's a static build, so uploading your own data isn't available there — that needs the real backend, see [Getting started](#getting-started) below.
+
 ## What it does
 
 1. **Profile** — point reclab at your interaction data; it profiles sparsity, cold-start ratio, item metadata richness, interaction volume, and sequence length.

@@ -29,9 +29,10 @@ frontend/build/
 # Data
 *.csv
 *.parquet
-data/
+/data/
 benchmarks/data/
 !benchmarks/**/*.md
+!frontend/src/demo/data/*.json
 
 # OS
 .DS_Store

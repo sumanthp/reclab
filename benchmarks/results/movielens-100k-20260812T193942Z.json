@@ -61,5 +61,12 @@
       "cold_start_recall_at_k": 0.0,
       "cold_start_surfaced_rate": 1.0
     }
+  },
+  "comparison": {
+    "shortlist_pick": "sasrec",
+    "measured_best_recall": "sasrec",
+    "measured_best_cold_start_recall": "two_tower",
+    "matches_on_recall": true,
+    "note": null
   }
 }

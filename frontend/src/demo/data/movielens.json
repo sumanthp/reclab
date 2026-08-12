@@ -1,0 +1,72 @@
+{
+  "dataset": "movielens-100k",
+  "profile": {
+    "n_users": 943,
+    "n_items": 1682,
+    "n_interactions": 100000,
+    "sparsity": 0.9369533063577546,
+    "cold_start_ratio": 0.19797859690844233,
+    "median_sequence_length": 65.0,
+    "has_item_text": true,
+    "has_item_image": false
+  },
+  "reasoning_engine_shortlist": [
+    {
+      "architecture": "sasrec",
+      "rank": 1,
+      "score": 0.75,
+      "rationale": "boosted: median sequence length 65.0 gives the sequence model enough signal to use"
+    },
+    {
+      "architecture": "two_tower",
+      "rank": 2,
+      "score": 0.5,
+      "rationale": "solid general-purpose baseline for dense collaborative signal"
+    },
+    {
+      "architecture": "hybrid_llm",
+      "rank": 3,
+      "score": 0.35,
+      "rationale": "no strong signal either way; likely not worth the extra cost here"
+    }
+  ],
+  "eval_results": {
+    "two_tower": {
+      "architecture": "TwoTower",
+      "k": 10,
+      "n_test_users": 943,
+      "recall_at_k": 0.12089077412513255,
+      "ndcg_at_k": 0.062322005295698896,
+      "coverage_at_k": 0.42746730083234247,
+      "cold_start_recall_at_k": 0.0,
+      "cold_start_surfaced_rate": 0.0010604453870625664
+    },
+    "sasrec": {
+      "architecture": "SASRec",
+      "k": 10,
+      "n_test_users": 943,
+      "recall_at_k": 0.14103923647932132,
+      "ndcg_at_k": 0.06915991984356837,
+      "coverage_at_k": 0.1313912009512485,
+      "cold_start_recall_at_k": 0.0,
+      "cold_start_surfaced_rate": 0.0
+    },
+    "hybrid_llm": {
+      "architecture": "HybridLLM",
+      "k": 10,
+      "n_test_users": 943,
+      "recall_at_k": 0.11876988335100742,
+      "ndcg_at_k": 0.04531182266835947,
+      "coverage_at_k": 0.28715814506539833,
+      "cold_start_recall_at_k": 0.0,
+      "cold_start_surfaced_rate": 1.0
+    }
+  },
+  "comparison": {
+    "shortlist_pick": "sasrec",
+    "measured_best_recall": "sasrec",
+    "measured_best_cold_start_recall": "two_tower",
+    "matches_on_recall": true,
+    "note": null
+  }
+}

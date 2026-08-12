@@ -21,7 +21,19 @@ needed and the frontend just calls same-origin relative paths
 ```bash
 npm run build   # type-checks (tsc -b) then builds to dist/
 npm run lint    # oxlint
+npm test        # vitest (unit + component tests)
 ```
+
+## Demo mode
+
+`VITE_DEMO_MODE=true npm run build` builds the static site deployed to
+[GitHub Pages](https://sumanthp.github.io/reclab/) (`.github/workflows/ci.yml`,
+`deploy-demo` job) — same components, same code paths, but `App.tsx` reads
+from `src/demo/fixtures.ts` (real `scripts/run_benchmark.py` output, copied
+from `benchmarks/results/`) instead of calling the network functions in
+`lib/api.ts`, since Pages can't run the Python backend. `vite.config.ts`
+also sets `base: '/reclab/'` for that build only — GitHub Pages project
+sites are served from a subpath, not the domain root.
 
 ## Structure
 
@@ -32,6 +44,7 @@ src/
     api.ts        # typed fetch wrappers for every endpoint
     format.ts     # number/percent formatting helpers
   components/      # one component per screen section
+  demo/            # static fixtures + picker UI for the GitHub Pages build
   App.tsx          # the Upload -> Profile -> Shortlist -> Compare state machine
 ```
 

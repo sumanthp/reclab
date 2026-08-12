@@ -6,7 +6,13 @@ import react from '@vitejs/plugin-react'
 // with no CORS setup needed in dev. The backend also sets permissive CORS
 // headers itself (see src/reclab/api/main.py) for the case the built
 // frontend is served separately, e.g. docker-compose.
+// GitHub Pages serves a project page (not a custom domain) at
+// /<repo-name>/, so asset URLs need that prefix — but only for that build;
+// local dev and the docker-compose/nginx build both serve from the root.
+const base = process.env.VITE_DEMO_MODE === 'true' ? '/reclab/' : '/'
+
 export default defineConfig({
+  base,
   plugins: [react()],
   server: {
     proxy: {

@@ -61,5 +61,12 @@
       "cold_start_recall_at_k": 0.04918032786885246,
       "cold_start_surfaced_rate": 0.41106719367588934
     }
+  },
+  "comparison": {
+    "shortlist_pick": "two_tower",
+    "measured_best_recall": "hybrid_llm",
+    "measured_best_cold_start_recall": "sasrec",
+    "matches_on_recall": false,
+    "note": null
   }
 }
