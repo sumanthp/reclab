@@ -1,0 +1,101 @@
+:root {
+  --bg: #f3f6f5;
+  --surface: #ffffff;
+  --surface-2: #eaf0ee;
+  --surface-3: #dde6e3;
+  --border: #d2dbd8;
+  --text: #101819;
+  --text-muted: #55655f;
+  --text-faint: #7c8b84;
+  --accent: #0f8a7a;
+  --accent-strong: #0a6c60;
+  --accent-soft: #e0f2ee;
+  --match: #2f7d4f;
+  --match-soft: #e4f2e8;
+  --mismatch: #b8452f;
+  --mismatch-soft: #fbe8e2;
+  --warn: #a06a1a;
+  --warn-soft: #f6ecd6;
+  --danger: #b8452f;
+  --danger-soft: #fbe8e2;
+  --focus: #0f8a7a;
+  --shadow: 0 1px 2px rgba(16, 24, 25, 0.06), 0 6px 20px rgba(16, 24, 25, 0.05);
+  --sans:
+    -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1213;
+    --surface: #121a1c;
+    --surface-2: #172023;
+    --surface-3: #1e2a2d;
+    --border: #263133;
+    --text: #edf3f1;
+    --text-muted: #9db0ac;
+    --text-faint: #71827d;
+    --accent: #2fd6bf;
+    --accent-strong: #57e3cf;
+    --accent-soft: #103330;
+    --match: #62c188;
+    --match-soft: #163524;
+    --mismatch: #e2775b;
+    --mismatch-soft: #3a2018;
+    --warn: #dcac54;
+    --warn-soft: #392c13;
+    --danger: #e2775b;
+    --danger-soft: #3a2018;
+    --focus: #2fd6bf;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 8px 24px rgba(0, 0, 0, 0.35);
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent-strong);
+}
+
+code {
+  font-family: var(--mono);
+  font-size: 0.92em;
+}
+
+button {
+  font: inherit;
+}
+
+button:focus-visible,
+input:focus-visible,
+summary:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+#root {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 0 24px 80px;
+}

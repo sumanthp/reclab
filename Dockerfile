@@ -1,7 +1,7 @@
-# Minimal image for the reclab API. Kept to the core (non-ml) dependency set
-# so `docker compose up` stays fast — the `ml` extra (torch) is only needed
-# for actually training architectures, not for profiling/reasoning-engine
-# calls over the API.
+# Minimal image for the reclab API. `uv sync --no-dev` installs the base
+# dependency set (numpy/pandas/scikit-learn, no PyTorch — see pyproject.toml)
+# which is also what /compare's training+eval job runs on; there's no
+# separate "ml" extra or training service.
 FROM python:3.11-slim
 
 RUN pip install --no-cache-dir uv

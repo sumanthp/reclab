@@ -1,15 +1,16 @@
-# Default: just the API, no external database. Per the MVP plan (section 7),
-# a single-user local run shouldn't require standing up Postgres just to try
-# the repo — that's exactly the friction that kills a fast first-run
-# experience. The API is stateless for now (profiling and reasoning-engine
-# calls don't persist anything yet).
+# `docker compose up` runs the full stack: the API and the frontend, talking
+# to each other over the compose network (see frontend/nginx.conf) — no
+# separate API-base-URL configuration needed.
 #
-#   docker compose up
+# The API persists /compare job state via SQLite (RECLAB_STORAGE below,
+# inside the mounted ./data volume so it survives container restarts) — no
+# external database needed for local/single-user use. Per the MVP plan
+# (section 7), that's a deliberate choice: standing up Postgres just to try
+# the repo is exactly the friction that kills a fast first-run experience.
 #
 # If/when run history needs to persist for a shared/multi-user deployment,
 # uncomment the `postgres` service and `db` profile below and point the API
-# at it via DATABASE_URL. Until then, SQLite (used automatically, no service
-# needed) is enough for local runs.
+# at it via DATABASE_URL.
 
 services:
   api:
@@ -17,9 +18,16 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - RECLAB_STORAGE=sqlite:///./reclab.db
+      - RECLAB_STORAGE=sqlite:///./data/reclab.db
     volumes:
       - ./data:/app/data
+
+  web:
+    build: ./frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - api
 
   # Optional, for a shared/multi-user deployment. Not required for local use.
   # postgres:

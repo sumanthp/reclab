@@ -12,7 +12,9 @@ Self-hosted by design: `docker compose up` locally, or deploy the same container
 2. **Reason** — a planner maps that profile to a ranked shortlist of candidate architectures, with a plain-language rationale for each — not just a score.
 3. **Compare** — evaluate candidates side by side on your actual data: Recall@K, NDCG@K, coverage, cold-start slice performance.
 
-## Status: Phase 0/1 — reasoning engine validated on two real datasets and synthetic data, with an honest gap found
+## Status: Phase 0/1 done, plus a working end-to-end UI ahead of schedule
+
+Phase 0/1 (reasoning engine validated, all three architectures real) is done — see below. The dashboard/sandbox UI was originally sequenced *after* the Phase 2 launch (`docs/architecture/mvp-plan.md` section 9), but a working version exists now: `docker compose up`, upload a CSV, and the whole profile → shortlist → compare → results loop runs against the live API in the browser. What's *not* built yet is the fuller dual-audience dashboard from `docs/architecture/ui-ux-plan.md` (saved run history, structured rationale detail) — see "what's not done" below.
 
 Phase 0 asked: **does the reasoning engine's shortlist actually track which architecture wins, or is it just a plausible-sounding heuristic?** The answer, after training and evaluating all three architectures on real MovieLens 100K data, a real Amazon Reviews 2023 category, and synthetic data: it's mixed, and that's reported rather than hidden. See [`benchmarks/README.md`](benchmarks/README.md) for the full writeup — short version: on MovieLens, the planner's #1 pick (`sasrec`) matched the measured overall winner on Recall@K and NDCG@K. On Amazon Reviews' `All_Beauty` category, it didn't — the planner itself flagged that case as low-confidence ("no strong signal either way"), and the guess was wrong. On the synthetic scenarios, the planner correctly identifies *which architecture is best on the specific dimension its rationale invokes* (e.g. `hybrid_llm` does win on cold-start recall exactly when the planner says it should), but its shortlist *ranking* currently conflates that with "best overall," which a single Recall@K comparison doesn't validate. That's a concrete, non-cosmetic next step for the planner, not a passing grade.
 
@@ -22,13 +24,14 @@ What's real today:
 - **All three architectures actually train and recommend** (`src/reclab/architectures/`) — real NumPy implementations (BPR matrix factorization, a hand-derived self-attention sequential model with backprop checked against numerical gradients, and a hybrid encoder + pluggable re-ranker), not stubs. No PyTorch dependency — see the architectures' module docstrings and `pyproject.toml` for why.
 - A full eval harness (`src/reclab/eval/`) — temporal train/test splitting, Recall@K, NDCG@K, coverage, and two cold-start metrics.
 - A synthetic dataset generator (`src/reclab/datasets/synthetic.py`) with controllable sparsity, cold-start ratio, and item-text structure, plus real loaders for MovieLens 100K and Amazon Reviews 2023 (`src/reclab/datasets/loaders.py`) — all exercised end-to-end against real downloads (see [`benchmarks/README.md`](benchmarks/README.md)).
-- A FastAPI service (`src/reclab/api/`) exposing profiling + reasoning over HTTP.
+- A FastAPI service (`src/reclab/api/`) exposing profiling, reasoning, and a full async train+eval comparison job (`/profile`, `/compare`, `/runs/{id}`) over HTTP.
+- **A working end-to-end web UI** (`frontend/`, React + TypeScript) — upload a CSV, see the profile and shortlist, kick off the full architecture comparison, and see the same match/mismatch verdict `benchmarks/README.md` reports on, in the browser. Not the full dual-audience dashboard from the design doc (`docs/architecture/ui-ux-plan.md`) yet — no saved run history, no structured rationale breakdown (still prose, see the plan's open question) — but a real, working product loop against the live API, not a mockup.
 - `scripts/run_benchmark.py` and `scripts/demo.sh` — the actual train-and-evaluate pipeline, runnable in under a minute, no GPU or API keys required.
 
 What's not done yet (see [`CONTRIBUTING.md`](CONTRIBUTING.md)):
 - **Calibrating the reasoning engine's ranking logic** against the multi-metric finding above — both real-dataset runs now point at the same underlying gap (shortlist conflates "best overall" with "best on the dimension its own rationale invokes").
 - **A `coverage_at_k` definition fix** for architectures (like `hybrid_llm`) whose candidate pool isn't limited to the train/test interaction catalog — see the Amazon Reviews findings in `benchmarks/README.md`.
-- Any UI. The dashboard/sandbox described in the plan doc is intentionally sequenced *after* this validation work, not before.
+- The rest of the dual-audience dashboard from `docs/architecture/ui-ux-plan.md` — saved/browsable run history, a structured (not parsed-prose) rationale breakdown, and the deeper Layer 2 technical detail views.
 
 ## Candidate architectures
 
@@ -49,8 +52,8 @@ src/reclab/
   architectures/        # candidate architectures behind a common interface (two_tower, sasrec, hybrid_llm)
   reasoning_engine/      # planner: data profile -> ranked architecture shortlist + rationale
   eval/                 # temporal train/test split + offline evaluation harness
-  api/                  # FastAPI service exposing profiling/reasoning over HTTP
-frontend/               # React + TypeScript UI (not started — sequenced after this validation work)
+  api/                  # FastAPI service: /profile, /compare (async job), /runs/{id}, /architectures
+frontend/               # React + TypeScript UI — upload, profile, shortlist, compare, results
 benchmarks/             # benchmark results, checked in and reproducible, with an honest write-up of findings
 scripts/                # run_benchmark.py (train+eval pipeline) and demo.sh (the actual demo)
 docs/architecture/       # design docs, including the full MVP plan
@@ -80,14 +83,29 @@ Or against your own interaction data (a CSV with at least `user_id`, `item_id`, 
 uv run python scripts/run_benchmark.py --csv path/to/interactions.csv
 ```
 
-Or run the API:
+Or run the full stack — API + web UI — with Docker:
 
 ```bash
 docker compose up
-# then: curl -F "interactions_csv=@path/to/interactions.csv" http://localhost:8000/profile
+# then open http://localhost:5173
+```
+
+Upload an interactions CSV (needs at least `user_id`/`item_id` columns, plus `timestamp` if you want to run the full comparison, not just the profile + shortlist) and, optionally, an item metadata CSV (`item_id`, `description` columns) to enable `hybrid_llm`'s item-text signal. Or hit the API directly:
+
+```bash
+curl -F "interactions_csv=@path/to/interactions.csv" http://localhost:8000/profile
 ```
 
 No database setup required for local use — see `docker-compose.yml` for the optional Postgres profile if you're running this on a shared server instead of locally.
+
+For frontend development with hot reload instead of the Docker build, run the two pieces separately (requires [Node.js](https://nodejs.org/) 20+):
+
+```bash
+uv run uvicorn reclab.api.main:app --reload   # terminal 1, http://localhost:8000
+cd frontend && npm install && npm run dev     # terminal 2, http://localhost:5173
+```
+
+Vite's dev server proxies API calls to `localhost:8000` (see `frontend/vite.config.ts`) — no CORS setup needed.
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md) for how to add a new architecture or extend the reasoning engine, and [`benchmarks/README.md`](benchmarks/README.md) for what the benchmark runs actually found.
 
