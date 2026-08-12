@@ -57,7 +57,13 @@ from reclab.datasets.loaders import (  # noqa: E402
     load_amazon_reviews_category,
     load_movielens_100k,
 )
-from reclab.eval import run_eval, temporal_train_test_split  # noqa: E402
+from reclab.eval import (  # noqa: E402
+    ComparisonSummary,
+    EvalResult,
+    run_eval,
+    summarize_comparison,
+    temporal_train_test_split,
+)
 from reclab.reasoning_engine import recommend_architectures  # noqa: E402
 
 RESULTS_DIR = Path(__file__).resolve().parent.parent / "benchmarks" / "results"
@@ -139,7 +145,8 @@ def main() -> None:
         print(f"  #{rec.rank} {rec.architecture} (score={rec.score:.2f}) — {rec.rationale}")
 
     has_timestamp = "timestamp" in interactions.columns
-    eval_results = {}
+    eval_results: dict[str, dict] = {}
+    comparison: ComparisonSummary | None = None
     if has_timestamp:
         train, test = temporal_train_test_split(
             interactions, user_col=args.user_col, item_col=args.item_col
@@ -147,6 +154,7 @@ def main() -> None:
         print(f"\nTrain/test split: {len(train)} train rows, {len(test)} test rows\n")
         print("Training and evaluating all registered architectures...")
 
+        eval_results_objs: dict[str, EvalResult] = {}
         for name, arch_cls in REGISTRY.items():
             try:
                 result = run_eval(
@@ -159,6 +167,7 @@ def main() -> None:
                     item_col=args.item_col,
                 )
                 eval_results[name] = asdict(result)
+                eval_results_objs[name] = result
                 cold_recall = (
                     f"{result.cold_start_recall_at_k:.3f}"
                     if result.cold_start_recall_at_k is not None
@@ -175,27 +184,18 @@ def main() -> None:
                 print(f"  {name}: skipped — {exc}")
                 eval_results[name] = {"skipped": str(exc)}
 
-        scored = {name: r for name, r in eval_results.items() if "recall_at_k" in r}
-        best_recall = max(scored, key=lambda n: scored[n]["recall_at_k"], default=None)
-        best_cold_recall = max(
-            (n for n in scored if scored[n]["cold_start_recall_at_k"] is not None),
-            key=lambda n: scored[n]["cold_start_recall_at_k"],
-            default=None,
-        )
+        comparison = summarize_comparison(shortlist, eval_results_objs)
 
-        print(f"\nReasoning engine's #1 pick: {shortlist[0].architecture}")
-        print(f"Measured best by Recall@{args.k}: {best_recall}")
-        if best_cold_recall:
-            print(f"Measured best by ColdStartRecall@{args.k}: {best_cold_recall}")
-
-        if best_recall and shortlist[0].architecture != best_recall:
-            note = (
-                " — but it does win on ColdStartRecall, which is plausibly what the "
-                "planner's rationale was actually optimizing for; a single Recall@K "
-                "comparison doesn't capture that trade-off"
-                if shortlist[0].architecture == best_cold_recall
-                else ""
+        print(f"\nReasoning engine's #1 pick: {comparison.shortlist_pick}")
+        print(f"Measured best by Recall@{args.k}: {comparison.measured_best_recall}")
+        if comparison.measured_best_cold_start_recall:
+            print(
+                f"Measured best by ColdStartRecall@{args.k}: "
+                f"{comparison.measured_best_cold_start_recall}"
             )
+
+        if comparison.matches_on_recall is False:
+            note = f" — but {comparison.note}" if comparison.note else ""
             print(
                 f"\nMISMATCH on Recall@{args.k}{note}. This is exactly the signal Phase 0 "
                 "exists to surface — see benchmarks/README.md before trusting the "
@@ -216,6 +216,7 @@ def main() -> None:
                 "profile": asdict(profile),
                 "reasoning_engine_shortlist": [asdict(r) for r in shortlist],
                 "eval_results": eval_results,
+                "comparison": asdict(comparison) if comparison else None,
             },
             indent=2,
         )

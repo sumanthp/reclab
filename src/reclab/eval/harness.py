@@ -75,7 +75,20 @@ def run_eval(
     """Fit `architecture` on `train` and evaluate against held-out `test`
     interactions. Assumes `architecture` is unfitted (a fresh instance) —
     the harness owns the fit/eval lifecycle so results aren't accidentally
-    computed against data the model already trained on."""
+    computed against data the model already trained on.
+
+    Every `Architecture` implementation reads fixed `"user_id"`/`"item_id"`
+    column names internally (see e.g. architectures/two_tower.py) rather
+    than accepting `user_col`/`item_col` themselves — so if the caller's
+    columns are named differently, `train`/`test` are renamed to the
+    canonical names before being handed to the architecture. `user_col`/
+    `item_col` still control what columns this function reads *its own*
+    inputs from; they don't need to already be "user_id"/"item_id"."""
+    if user_col != "user_id" or item_col != "item_id":
+        train = train.rename(columns={user_col: "user_id", item_col: "item_id"})
+        test = test.rename(columns={user_col: "user_id", item_col: "item_id"})
+    user_col, item_col = "user_id", "item_id"
+
     architecture.fit(train, item_metadata)
 
     train_item_counts = train[item_col].value_counts()
