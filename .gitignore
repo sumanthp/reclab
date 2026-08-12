@@ -33,6 +33,7 @@ frontend/build/
 benchmarks/data/
 !benchmarks/**/*.md
 !frontend/src/demo/data/*.json
+!frontend/e2e/fixtures/*.csv
 
 # OS
 .DS_Store

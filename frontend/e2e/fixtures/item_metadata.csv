@@ -1,0 +1,21 @@
+item_id,category,description
+i0,3,category 3 item 0 cat3_tag2 cat3_tag18 cat3_tag16 cat3_tag7 cat3_tag8
+i1,4,category 4 item 1 cat4_tag5 cat4_tag12 cat4_tag9 cat4_tag0 cat4_tag1
+i2,6,category 6 item 2 cat6_tag5 cat6_tag15 cat6_tag13 cat6_tag1 cat6_tag10
+i3,7,category 7 item 3 cat7_tag7 cat7_tag19 cat7_tag9 cat7_tag16 cat7_tag5
+i4,0,category 0 item 4 cat0_tag14 cat0_tag6 cat0_tag18 cat0_tag12 cat0_tag11
+i5,1,category 1 item 5 cat1_tag7 cat1_tag13 cat1_tag6 cat1_tag9 cat1_tag1
+i6,6,category 6 item 6 cat6_tag9 cat6_tag13 cat6_tag6 cat6_tag16 cat6_tag4
+i7,7,category 7 item 7 cat7_tag2 cat7_tag12 cat7_tag0 cat7_tag15 cat7_tag10
+i8,1,category 1 item 8 cat1_tag3 cat1_tag10 cat1_tag16 cat1_tag12 cat1_tag14
+i9,2,category 2 item 9 cat2_tag3 cat2_tag12 cat2_tag16 cat2_tag14 cat2_tag19
+i10,6,category 6 item 10 cat6_tag4 cat6_tag18 cat6_tag12 cat6_tag0 cat6_tag15
+i11,3,category 3 item 11 cat3_tag15 cat3_tag4 cat3_tag8 cat3_tag13 cat3_tag18
+i12,2,category 2 item 12 cat2_tag9 cat2_tag15 cat2_tag2 cat2_tag0 cat2_tag16
+i13,6,category 6 item 13 cat6_tag9 cat6_tag19 cat6_tag16 cat6_tag10 cat6_tag0
+i14,2,category 2 item 14 cat2_tag1 cat2_tag19 cat2_tag15 cat2_tag13 cat2_tag7
+i15,3,category 3 item 15 cat3_tag3 cat3_tag6 cat3_tag15 cat3_tag18 cat3_tag14
+i16,5,category 5 item 16 cat5_tag16 cat5_tag19 cat5_tag14 cat5_tag6 cat5_tag2
+i17,4,category 4 item 17 cat4_tag8 cat4_tag0 cat4_tag12 cat4_tag9 cat4_tag6
+i18,0,category 0 item 18 cat0_tag7 cat0_tag14 cat0_tag6 cat0_tag11 cat0_tag1
+i19,0,category 0 item 19 cat0_tag7 cat0_tag6 cat0_tag15 cat0_tag2 cat0_tag16

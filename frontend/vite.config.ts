@@ -33,5 +33,9 @@ export default defineConfig({
     environment: 'happy-dom',
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    // e2e/ holds Playwright specs (@playwright/test, a different `test`
+    // API and runner) — without this, Vitest's default glob picks up
+    // *.spec.ts there too and fails trying to run them as unit tests.
+    exclude: ['**/node_modules/**', '**/e2e/**'],
   },
 })
